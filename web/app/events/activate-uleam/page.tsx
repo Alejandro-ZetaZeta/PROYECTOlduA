@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 
 export default function ActivateUleamPage() {
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="relative flex flex-1 flex-col">
       <Hero hero={activateUleam.hero} />
       <Roadmap roadmap={activateUleam.roadmap} />
       <CTA cta={activateUleam.cta} />

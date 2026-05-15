@@ -7,29 +7,51 @@ type Props = {
 
 export function CTA({ cta }: Props) {
   return (
-    <section className="mx-auto w-full max-w-6xl px-6 pb-16 sm:px-10 sm:pb-20">
-      <div className="relative overflow-hidden rounded-3xl border border-card-border bg-card p-8 sm:p-12">
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
-          <div className="absolute -bottom-24 -right-24 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
-        </div>
+    <section className="mx-auto w-full max-w-6xl px-6 pb-16 sm:px-10 sm:pb-24">
+      <div
+        className="relative overflow-hidden rounded-2xl border p-5 backdrop-blur-sm sm:rounded-3xl sm:p-14"
+        style={{
+          borderColor: "rgba(196,163,90,0.22)",
+          background:
+            "linear-gradient(135deg, rgba(196,163,90,0.06) 0%, rgba(255,255,255,0.03) 60%, rgba(196,163,90,0.04) 100%)",
+        }}
+      >
+        {/* Subtle inner glow */}
+        <div
+          className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full blur-3xl"
+          style={{ background: "rgba(196,163,90,0.08)" }}
+        />
+        <div
+          className="pointer-events-none absolute -bottom-24 -right-24 h-72 w-72 rounded-full blur-3xl"
+          style={{ background: "rgba(196,163,90,0.06)" }}
+        />
 
         <div className="relative">
           <Reveal>
-            <p className="text-xs tracking-[0.25em] text-muted">CIERRE</p>
+            <div className="flex items-center gap-3">
+              <div
+                className="h-px w-8"
+                style={{ background: "rgba(196,163,90,0.55)" }}
+              />
+              <p className="text-[0.65rem] tracking-[0.34em] text-gold">
+                CIERRE
+              </p>
+            </div>
           </Reveal>
-          <Reveal delay={0.05}>
-            <h2 className="mt-4 text-balance font-[var(--font-display)] text-3xl tracking-tight sm:text-4xl">
+
+          <Reveal delay={0.06}>
+            <h2 className="mt-6 text-balance font-[var(--font-display)] text-3xl tracking-tight text-foreground sm:text-4xl">
               {cta.title}
             </h2>
           </Reveal>
 
-          <Reveal delay={0.1}>
-            <div className="mt-6 flex flex-wrap gap-2">
+          <Reveal delay={0.12}>
+            <div className="mt-8 flex flex-wrap gap-3">
               {cta.pillars.map((p) => (
                 <span
                   key={p}
-                  className="rounded-full border border-card-border bg-white/5 px-4 py-2 text-sm text-foreground/90"
+                  className="rounded-full border px-5 py-2 text-sm tracking-wide text-foreground/85"
+                  style={{ borderColor: "rgba(196,163,90,0.28)" }}
                 >
                   {p}
                 </span>

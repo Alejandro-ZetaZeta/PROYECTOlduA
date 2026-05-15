@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import { Reveal } from "../components/Reveal";
 import type { activateUleam } from "../content";
 
@@ -9,52 +7,43 @@ type Props = {
 
 export function Hero({ hero }: Props) {
   return (
-    <section className="relative overflow-hidden">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-24 -top-32 h-[520px] w-[520px] rounded-full bg-white/10 blur-3xl" />
-        <div className="absolute -right-28 top-10 h-[460px] w-[460px] rounded-full bg-white/10 blur-3xl" />
-      </div>
+    <section className="relative pb-20 pt-12 sm:pb-28 sm:pt-20 lg:pb-36 lg:pt-28">
+      <div className="mx-auto w-full max-w-6xl px-6 sm:px-10">
 
-      <div className="mx-auto w-full max-w-6xl px-6 pt-10 sm:px-10">
-        <header className="flex items-center justify-between">
-          <Link href="/" className="text-sm text-muted hover:text-foreground">
-            ← Eventos
-          </Link>
-          <p className="text-xs tracking-[0.25em] text-muted">
-            LDU-A ULEAM
-          </p>
-        </header>
-      </div>
-
-      <div className="mx-auto flex w-full max-w-6xl flex-col px-6 pb-16 pt-14 sm:px-10 sm:pb-24 sm:pt-20">
+        {/* Kicker: reduced tracking on mobile to prevent overflow */}
         <Reveal>
-          <p className="text-sm tracking-[0.25em] text-muted">
-            {hero.subtitle1}
+          <p className="text-[0.6rem] tracking-[0.18em] text-gold sm:text-xs sm:tracking-[0.32em]">
+            LDU-A ULEAM &nbsp;·&nbsp; {hero.subtitle1}
           </p>
         </Reveal>
 
-        <Reveal delay={0.05}>
-          <h1 className="mt-5 text-balance font-[var(--font-display)] text-4xl leading-[0.98] tracking-tight sm:text-7xl lg:text-8xl">
+        <Reveal delay={0.07}>
+          <h1 className="mt-7 text-balance font-kunaroh text-5xl leading-[0.94] tracking-[0.04em] text-foreground sm:text-7xl lg:text-[7rem] xl:text-[8rem]">
             {hero.title}
           </h1>
         </Reveal>
 
-        <Reveal delay={0.1}>
-          <p className="mt-5 max-w-2xl text-pretty text-base leading-7 text-muted sm:text-lg">
+        <Reveal delay={0.14}>
+          <p className="mt-5 max-w-xl text-pretty text-sm leading-[1.8] text-muted sm:mt-7 sm:text-base lg:text-lg">
             {hero.subtitle2}
           </p>
         </Reveal>
 
-        <Reveal delay={0.15}>
-          <div className="mt-8 inline-flex w-fit flex-col gap-3 rounded-2xl border border-card-border bg-card px-5 py-4">
-            <p className="text-xs tracking-[0.22em] text-muted">
+        <Reveal delay={0.2}>
+          <div className="mt-8 inline-flex flex-col gap-2 border-l-2 border-gold/40 pl-5 sm:mt-10">
+            <p className="text-[0.6rem] tracking-[0.3em] text-gold/70 sm:text-[0.65rem] sm:tracking-[0.34em]">
               PRESENTA
             </p>
-            <p className="max-w-2xl text-sm leading-6 text-foreground/90">
+            <p className="max-w-lg text-xs leading-[1.75] text-foreground/75 sm:text-sm">
               {hero.presentedBy}
             </p>
           </div>
         </Reveal>
+
+        <Reveal delay={0.26}>
+          <div className="mt-10 h-px w-20 bg-gradient-to-r from-gold/50 to-transparent sm:mt-12" />
+        </Reveal>
+
       </div>
     </section>
   );

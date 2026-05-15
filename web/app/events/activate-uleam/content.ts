@@ -9,7 +9,7 @@ export type RoadmapStop = {
 
 export const activateUleam = {
   hero: {
-    title: "ACTIVA ULEAM",
+    title: "Activate Uleam",
     subtitle1: "DEPORTE E INTEGRACIÓN ESTUDIANTIL",
     subtitle2: "MÁS QUE DEPORTE, SOMOS COMUNIDAD",
     presentedBy:

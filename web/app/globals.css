@@ -1,38 +1,80 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "Kunaroh";
+  src:
+    url("/Kunaroh.ttf") format("truetype"),
+    url("/Kunaroh.otf") format("opentype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
-  --background: #07080a;
-  --foreground: #f4f4f5;
-  --muted: #a1a1aa;
-  --card: rgba(255, 255, 255, 0.06);
-  --card-border: rgba(255, 255, 255, 0.12);
-  --accent: #e7e5e4;
+  --background: #05060b;
+  --foreground: #eeebe6;
+  --muted: #9e9aad;
+  --gold: #c4a35a;
+  --gold-dim: rgba(196, 163, 90, 0.55);
+  --card: rgba(255, 255, 255, 0.045);
+  --card-border: rgba(255, 255, 255, 0.09);
+  --accent: #eeebe6;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
+  --color-gold: var(--gold);
   --color-card: var(--card);
   --color-card-border: var(--card-border);
   --color-accent: var(--accent);
   --font-sans: var(--font-inter);
   --font-display: var(--font-cinzel);
+  /* Generates .font-kunaroh { font-family: "Kunaroh", serif } with the value inlined,
+     so no runtime CSS variable is needed for the class to resolve. */
+  --font-kunaroh: "Kunaroh", serif;
 }
 
 body {
-  background:
-    radial-gradient(900px 600px at 10% 0%, rgba(255, 255, 255, 0.06), transparent 60%),
-    radial-gradient(700px 500px at 90% 10%, rgba(255, 255, 255, 0.05), transparent 60%),
-    radial-gradient(900px 700px at 40% 100%, rgba(255, 255, 255, 0.04), transparent 65%),
-    var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: var(--font-inter), system-ui, -apple-system, Segoe UI, Roboto, Arial,
+  font-family:
+    var(--font-inter),
+    system-ui,
+    -apple-system,
     sans-serif;
 }
 
+/* Fixed background — paints once relative to the viewport, never scrolls.
+   This eliminates the visible "seam" between sections that percentage-based
+   gradients on the body element produce when the page is taller than the viewport. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 85vw 65vh at 8% 0%,
+      rgba(196, 163, 90, 0.09) 0%,
+      transparent 65%
+    ),
+    radial-gradient(
+      ellipse 75vw 55vh at 92% 5%,
+      rgba(255, 255, 255, 0.04) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 95vw 75vh at 45% 105%,
+      rgba(196, 163, 90, 0.06) 0%,
+      transparent 70%
+    );
+}
+
 ::selection {
-  background: rgba(244, 244, 245, 0.18);
+  background: rgba(196, 163, 90, 0.22);
 }
 
 .text-balance {
