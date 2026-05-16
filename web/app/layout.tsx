@@ -28,7 +28,7 @@ export default function RootLayout({
       lang="es"
       className={`${inter.variable} ${cinzel.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col overflow-x-hidden">
+      <body className="relative min-h-full flex flex-col overflow-x-hidden">
         {children}
       </body>
     </html>

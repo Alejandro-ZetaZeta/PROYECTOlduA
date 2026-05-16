@@ -20,14 +20,8 @@ export const activateUleam = {
     title: "Ruta de actividades",
     stops: [
       {
-        date: "9 de mayo",
-        title: "Cine: De vuelta a la escuela deportiva",
-        location: "Auditorio ULEAM",
-      },
-      {
         date: "22 de mayo",
         title: "Seminario de defensa personal",
-        highlight: "¡GRATIS!",
         time: "5:00 – 6:00 p. m.",
       },
       {

@@ -15,7 +15,7 @@ export function Reveal({ children, delay = 0, ...props }: Props) {
       variants={reveal}
       initial="hidden"
       whileInView="show"
-      viewport={{ once: true, margin: "-10% 0px -10% 0px" }}
+      viewport={{ once: false, margin: "0px 0px -6% 0px" }}
       transition={{ duration: 0.6, ease: easeOutQuint, delay }}
       {...props}
     >
