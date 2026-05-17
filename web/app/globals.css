@@ -77,6 +77,19 @@ body::before {
   background: rgba(196, 163, 90, 0.22);
 }
 
+/* Scrollbar */
+html {
+  scrollbar-color: #c4a35a transparent;
+  scrollbar-width: thin;
+}
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: #c4a35a;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover { background: #d4b46a; }
+
 .text-balance {
   text-wrap: balance;
 }

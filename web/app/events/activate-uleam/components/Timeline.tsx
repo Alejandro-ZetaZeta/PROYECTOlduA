@@ -1,25 +1,46 @@
 "use client";
 
-import { motion } from "framer-motion";
+import * as React from "react";
+import { motion, useScroll, useTransform } from "framer-motion";
 
 import type { RoadmapStop } from "../content";
 import { easeOutQuint } from "@/lib/animations";
 
 export function Timeline({ stops }: { stops: RoadmapStop[] }) {
+  const ref = React.useRef<HTMLDivElement>(null);
+
+  // useScroll() with no target tracks window scroll — no container check, no warning.
+  // We compute the fill range from the element's measured document position instead.
+  const { scrollY } = useScroll();
+  const [range, setRange] = React.useState<[number, number]>([0, 1]);
+
+  React.useEffect(() => {
+    const update = () => {
+      const el = ref.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const top = rect.top + window.scrollY;
+      const vh = window.innerHeight;
+      setRange([top - vh * 0.85, top + rect.height - vh * 0.25]);
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  const lineScale = useTransform(scrollY, range, [0, 1], { clamp: true });
+
   return (
-    <div className="relative mt-14 pl-10 sm:pl-0">
+    <div ref={ref} className="relative mt-14 pl-10 sm:pl-0">
       {/* Track */}
-      <div className="absolute left-3 top-0 h-full w-px bg-white/8 sm:left-1/2 sm:-translate-x-1/2" />
-      {/* Fill */}
+      <div className="absolute left-3 top-0 h-full w-0.5 bg-white/8 sm:left-1/2 sm:-translate-x-1/2" />
+      {/* Fill — gradient bright at bottom so the leading tip glows */}
       <motion.div
-        className="absolute left-3 top-0 h-full w-px origin-top sm:left-1/2 sm:-translate-x-1/2"
-        initial={{ scaleY: 0 }}
-        whileInView={{ scaleY: 1 }}
-        viewport={{ once: false, margin: "0px 0px -15% 0px" }}
-        transition={{ duration: 1.4, ease: easeOutQuint }}
+        className="absolute left-3 top-0 h-full w-0.5 origin-top sm:left-1/2 sm:-translate-x-1/2"
         style={{
-          background:
-            "linear-gradient(to bottom, #c4a35a 0%, rgba(196,163,90,0.25) 100%)",
+          scaleY: lineScale,
+          background: "linear-gradient(to bottom, rgba(196,163,90,0.3) 0%, #c4a35a 70%, #f0d485 100%)",
+          boxShadow: "0 0 8px 2px rgba(196,163,90,0.6)",
         }}
       />
 
