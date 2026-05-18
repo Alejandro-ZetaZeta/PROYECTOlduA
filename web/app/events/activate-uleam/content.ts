@@ -54,7 +54,18 @@ export const activateUleam = {
   footer: {
     organizedBy:
       "Organiza: Liga Deportiva Universitaria Amateur ULEAM, Extensión Chone.",
-    contacts: ["0995662585", "0967483401"],
+    contacts: [
+      {
+        number: "0995662585",
+        message:
+          "Hola Josué, me gustaria saber mas de los eventos que organiza la LDU-A Chone",
+      },
+      {
+        number: "0967483401",
+        message:
+          "Hola Nathali, me gustaria saber mas de los eventos que organiza la LDU-A Chone",
+      },
+    ],
     social: "Síguenos en nuestras redes sociales (Facebook, Instagram, TikTok).",
   },
 } as const;
