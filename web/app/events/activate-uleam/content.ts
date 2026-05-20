@@ -23,7 +23,7 @@ export const activateUleam = {
         date: "22 de mayo",
         title: "Seminario de defensa personal",
         time: "5:00 – 6:00 p. m.",
-        location: "Ubicación: La Explanada del Bloque C",
+        location: "En la Explanada del Bloque C",
         details: "Es totalmente gratis, te esperamos!",
       },
       {
