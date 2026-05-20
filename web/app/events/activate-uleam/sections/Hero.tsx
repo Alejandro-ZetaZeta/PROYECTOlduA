@@ -57,13 +57,21 @@ export function Hero({ hero }: Props) {
         </Reveal>
 
         <Reveal delay={0.2}>
-          <div className="mt-8 inline-flex flex-col gap-2 border-l-2 border-gold/40 pl-5 sm:mt-10">
-            <p className="text-[0.6rem] tracking-[0.3em] text-gold/70 sm:text-[0.65rem] sm:tracking-[0.34em]">
-              PRESENTA
-            </p>
-            <p className="max-w-lg text-xs leading-[1.75] text-foreground/75 sm:text-sm">
-              {hero.presentedBy}
-            </p>
+          <div className="mt-8 flex flex-col items-start gap-4 sm:mt-10 lg:flex-row lg:items-center lg:gap-8">
+            <div className="inline-flex flex-col gap-2 border-l-2 border-gold/40 pl-5">
+              <p className="text-[0.6rem] tracking-[0.3em] text-gold/70 sm:text-[0.65rem] sm:tracking-[0.34em]">
+                PRESENTA
+              </p>
+              <p className="max-w-lg text-xs leading-[1.75] text-foreground/75 sm:text-sm">
+                {hero.presentedBy}
+              </p>
+            </div>
+            <img
+              src="/stickdown.png"
+              alt=""
+              aria-hidden="true"
+              className="h-16 w-auto opacity-80 mix-blend-screen sm:h-20 lg:h-32 xl:h-40"
+            />
           </div>
         </Reveal>
 

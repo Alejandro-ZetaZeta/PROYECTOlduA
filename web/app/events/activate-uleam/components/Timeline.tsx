@@ -104,7 +104,6 @@ function ImageLightbox({ open, onClose }: { open: boolean; onClose: () => void }
               width={1200}
               height={900}
               className="max-h-[85vh] w-auto rounded-xl object-contain shadow-2xl"
-              priority
             />
             <button
               onClick={onClose}
