@@ -20,16 +20,16 @@ export function Hero({ hero }: Props) {
           <motion.img
             src="/LOGO-ULEAM.svg"
             alt="ULEAM"
-            className="h-12 w-auto opacity-80 invert md:h-14 lg:h-16"
+            className="h-12 w-auto opacity-80 invert md:h-16 lg:h-24"
             initial={{ opacity: 0, x: -28 }}
             whileInView={{ opacity: 0.8, x: 0 }}
             viewport={{ once: false, margin: "0px 0px -6% 0px" }}
             transition={{ duration: 0.6, ease: easeOutQuint }}
           />
           <motion.img
-            src="/LOGO-ULEAM.svg"
+            src="/LDUA_BLANCO.png"
             alt="LDU-A"
-            className="h-12 w-auto opacity-80 invert md:h-14 lg:h-16"
+            className="h-12 w-auto opacity-80 md:h-16 lg:h-24"
             initial={{ opacity: 0, x: 28 }}
             whileInView={{ opacity: 0.8, x: 0 }}
             viewport={{ once: false, margin: "0px 0px -6% 0px" }}

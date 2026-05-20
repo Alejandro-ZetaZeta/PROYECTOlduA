@@ -27,13 +27,13 @@ export const activateUleam = {
         details: "Es totalmente gratis, te esperamos!",
       },
       {
-        date: "6 de junio",
+        date: "13 de junio",
         title: "Torneo relámpago de fútbol",
         time: "9:00 a. m.",
         location: "Cancha sintética “El Camping”",
       },
       {
-        date: "20 de junio",
+        date: "4 de julio",
         title: "Gran carrera LDU 5K",
         time: "8:00 a. m.",
         details: "Con apoyo de CAI (atención médica para participantes)",
