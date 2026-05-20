@@ -12,18 +12,25 @@ const SEMINAR_TARGET = new Date("2026-05-22T22:00:00Z");
 
 function useCountdown(target: Date) {
   const calc = () => Math.max(0, Math.floor((target.getTime() - Date.now()) / 1000));
-  const [secs, setSecs] = React.useState(0);
+  const [secs, setSecs] = React.useState<number | null>(null);
+  
   React.useEffect(() => {
     setSecs(calc());
     const id = setInterval(() => setSecs(calc()), 1000);
     return () => clearInterval(id);
   }, []);
+
+  if (secs === null) {
+    return { days: 0, hours: 0, minutes: 0, seconds: 0, done: false, isReady: false };
+  }
+
   return {
     days: Math.floor(secs / 86400),
     hours: Math.floor((secs % 86400) / 3600),
     minutes: Math.floor((secs % 3600) / 60),
     seconds: secs % 60,
     done: secs === 0,
+    isReady: true,
   };
 }
 
@@ -39,10 +46,13 @@ function CountdownUnit({ value, label }: { value: number; label: string }) {
 }
 
 function SeminarCountdown() {
-  const { days, hours, minutes, seconds, done } = useCountdown(SEMINAR_TARGET);
+  const { days, hours, minutes, seconds, done, isReady } = useCountdown(SEMINAR_TARGET);
+  
   return (
     <div className="mt-4 border-t border-white/8 pt-4">
-      {done ? (
+      {!isReady ? (
+        <div className="h-[60px]" /> /* Skeleton / space placeholder */
+      ) : done ? (
         <p className="text-center text-xs text-gold">¡El evento ha comenzado!</p>
       ) : (
         <div className="flex flex-col items-center gap-2">
