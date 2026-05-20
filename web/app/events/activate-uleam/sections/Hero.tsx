@@ -1,3 +1,8 @@
+"use client";
+
+import { motion } from "framer-motion";
+
+import { easeOutQuint } from "@/lib/animations";
 import { Reveal } from "../components/Reveal";
 import type { activateUleam } from "../content";
 
@@ -10,6 +15,28 @@ export function Hero({ hero }: Props) {
     <section className="relative pb-20 pt-12 sm:pb-28 sm:pt-20 lg:pb-36 lg:pt-28">
       <div className="mx-auto w-full max-w-6xl px-6 sm:px-10">
 
+        {/* Institution logos — slide in from each end */}
+        <div className="mb-8 flex items-center justify-between sm:mb-10">
+          <motion.img
+            src="/LOGO-ULEAM.svg"
+            alt="ULEAM"
+            className="h-12 w-auto opacity-80 invert md:h-14 lg:h-16"
+            initial={{ opacity: 0, x: -28 }}
+            whileInView={{ opacity: 0.8, x: 0 }}
+            viewport={{ once: false, margin: "0px 0px -6% 0px" }}
+            transition={{ duration: 0.6, ease: easeOutQuint }}
+          />
+          <motion.img
+            src="/LOGO-ULEAM.svg"
+            alt="LDU-A"
+            className="h-12 w-auto opacity-80 invert md:h-14 lg:h-16"
+            initial={{ opacity: 0, x: 28 }}
+            whileInView={{ opacity: 0.8, x: 0 }}
+            viewport={{ once: false, margin: "0px 0px -6% 0px" }}
+            transition={{ duration: 0.6, ease: easeOutQuint }}
+          />
+        </div>
+
         {/* Kicker: reduced tracking on mobile to prevent overflow */}
         <Reveal>
           <p className="text-[0.6rem] tracking-[0.18em] text-gold sm:text-xs sm:tracking-[0.32em]">
@@ -18,7 +45,7 @@ export function Hero({ hero }: Props) {
         </Reveal>
 
         <Reveal delay={0.07}>
-          <h1 className="mt-7 text-balance font-kunaroh text-5xl leading-[0.94] tracking-[0.04em] text-foreground sm:text-7xl lg:text-[7rem] xl:text-[8rem]">
+          <h1 className="mt-7 text-balance text-center font-kunaroh text-5xl leading-[0.94] tracking-[0.04em] text-foreground sm:text-7xl lg:text-[7rem] xl:text-[8rem]">
             {hero.title}
           </h1>
         </Reveal>
