@@ -59,7 +59,7 @@ function SeminarCountdown() {
   );
 }
 
-const SEMINAR_IMG = "/SEMINARIO_DEF.jpeg";
+const SEMINAR_IMG = "/SEMINARIO_DEFE.jpeg";
 
 function ImageLightbox({ open, onClose }: { open: boolean; onClose: () => void }) {
   React.useEffect(() => {
@@ -158,7 +158,7 @@ function CardInner({
           </span>
         ) : null}
         {idx > 0 && (
-          <span className="rounded-full border border-white/15 bg-white/5 px-3 py-0.5 text-[0.6rem] tracking-[0.18em] text-muted/80">
+          <span className="rounded-full border border-gold/30 bg-gold/20 px-3 py-0.5 text-[0.6rem] tracking-[0.18em] text-muted/80">
             PRÓXIMAMENTE
           </span>
         )}
