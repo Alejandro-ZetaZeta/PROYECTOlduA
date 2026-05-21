@@ -16,7 +16,7 @@ export function Hero({ hero }: Props) {
       <div className="mx-auto w-full max-w-6xl px-6 sm:px-10">
 
         {/* Institution logos — slide in from each end */}
-        <div className="mb-8 flex items-center justify-between sm:mb-10">
+        <div className="relative mb-8 flex items-center justify-between sm:mb-10">
           <motion.img
             src="/LOGO-ULEAM.svg"
             alt="ULEAM"
@@ -26,6 +26,18 @@ export function Hero({ hero }: Props) {
             viewport={{ once: false, margin: "0px 0px -6% 0px" }}
             transition={{ duration: 0.6, ease: easeOutQuint }}
           />
+
+          {/* Center icon */}
+          <motion.img
+            src="/choneRe.png"
+            alt="Chone"
+            className="absolute left-1/2 h-12 w-auto -translate-x-1/2 opacity-90 md:h-16 lg:h-24"
+            initial={{ opacity: 0, scale: 0.8 }}
+            whileInView={{ opacity: 0.9, scale: 1 }}
+            viewport={{ once: false, margin: "0px 0px -6% 0px" }}
+            transition={{ duration: 0.6, ease: easeOutQuint }}
+          />
+
           <motion.img
             src="/LDUA_BLANCO.png"
             alt="LDU-A"
