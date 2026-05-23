@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 
 import type { RoadmapStop } from "../content";
@@ -210,7 +211,23 @@ function CardInner({
         </div>
       )}
       {idx === 0 && <SeminarCountdown />}
-      {idx === 1 && <TournamentCountdown />}
+      {idx === 1 && (
+        <>
+          <TournamentCountdown />
+          <div className="mt-4 flex justify-center">
+            <Link
+              href="/activate-uleam/registro-torneo"
+              className="inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/10 px-5 py-2 text-xs tracking-[0.18em] text-gold transition-colors hover:bg-gold/20 hover:border-gold/70"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5Z" />
+              </svg>
+              INSCRIBIRME
+            </Link>
+          </div>
+        </>
+      )}
     </div>
   );
 }
