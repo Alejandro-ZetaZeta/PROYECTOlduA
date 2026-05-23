@@ -10,6 +10,9 @@ import { easeOutQuint } from "@/lib/animations";
 // May 22 2026 17:00 Guayaquil time (UTC-5)
 const SEMINAR_TARGET = new Date("2026-05-22T22:00:00Z");
 
+// June 13 2026 09:00 UTC-5
+const TOURNAMENT_TARGET = new Date("2026-06-13T14:00:00Z");
+
 function useCountdown(target: Date) {
   const calc = () => Math.max(0, Math.floor((target.getTime() - Date.now()) / 1000));
   const [secs, setSecs] = React.useState<number | null>(null);
@@ -53,7 +56,31 @@ function SeminarCountdown() {
       {!isReady ? (
         <div className="h-[60px]" /> /* Skeleton / space placeholder */
       ) : done ? (
-        <p className="text-center text-xs text-gold">¡El evento ha comenzado!</p>
+        <p className="text-center text-xs text-gold">El evento ya pasó.</p>
+      ) : (
+        <div className="flex flex-col items-center gap-2">
+          <p className="text-[0.6rem] tracking-[0.22em] text-muted/60 uppercase">Comienza en</p>
+          <div className="flex gap-2.5">
+            <CountdownUnit value={days} label="días" />
+            <CountdownUnit value={hours} label="horas" />
+            <CountdownUnit value={minutes} label="min" />
+            <CountdownUnit value={seconds} label="seg" />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TournamentCountdown() {
+  const { days, hours, minutes, seconds, done, isReady } = useCountdown(TOURNAMENT_TARGET);
+
+  return (
+    <div className="mt-4 border-t border-white/8 pt-4">
+      {!isReady ? (
+        <div className="h-[60px]" />
+      ) : done ? (
+        <p className="text-center text-xs text-gold">El evento ya pasó.</p>
       ) : (
         <div className="flex flex-col items-center gap-2">
           <p className="text-[0.6rem] tracking-[0.22em] text-muted/60 uppercase">Comienza en</p>
@@ -183,6 +210,7 @@ function CardInner({
         </div>
       )}
       {idx === 0 && <SeminarCountdown />}
+      {idx === 1 && <TournamentCountdown />}
     </div>
   );
 }

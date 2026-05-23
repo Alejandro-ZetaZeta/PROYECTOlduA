@@ -12,7 +12,7 @@ type Props = {
 
 export function Hero({ hero }: Props) {
   return (
-    <section className="relative pb-20 pt-12 sm:pb-28 sm:pt-20 lg:pb-36 lg:pt-28">
+    <section className="relative pb-20 pt-20 sm:pb-28 sm:pt-24 lg:pb-36 lg:pt-28">
       <div className="mx-auto w-full max-w-6xl px-6 sm:px-10">
 
         {/* Institution logos — slide in from each end */}
@@ -51,7 +51,7 @@ export function Hero({ hero }: Props) {
 
         {/* Kicker: reduced tracking on mobile to prevent overflow */}
         <Reveal>
-          <p className="text-[0.6rem] tracking-[0.18em] text-gold sm:text-xs sm:tracking-[0.32em]">
+          <p className="text-center text-[0.6rem] tracking-[0.18em] text-gold sm:text-xs sm:tracking-[0.32em] lg:text-left">
             LDU-A ULEAM &nbsp;·&nbsp; {hero.subtitle1}
           </p>
         </Reveal>
@@ -63,13 +63,13 @@ export function Hero({ hero }: Props) {
         </Reveal>
 
         <Reveal delay={0.14}>
-          <p className="mt-5 max-w-xl text-pretty text-sm leading-[1.8] text-muted sm:mt-7 sm:text-base lg:text-lg">
+          <p className="mx-auto mt-5 max-w-xl text-pretty text-center text-sm leading-[1.8] text-muted sm:mt-7 sm:text-base lg:mx-0 lg:text-left lg:text-lg">
             {hero.subtitle2}
           </p>
         </Reveal>
 
         <Reveal delay={0.2}>
-          <div className="mt-8 flex flex-col items-start gap-4 sm:mt-10 lg:flex-row lg:items-center lg:gap-8">
+          <div className="mt-8 flex flex-col items-center gap-4 sm:mt-10 lg:flex-row lg:items-center lg:gap-8">
             <div className="inline-flex flex-col gap-2 border-l-2 border-gold/40 pl-5">
               <p className="text-[0.6rem] tracking-[0.3em] text-gold/70 sm:text-[0.65rem] sm:tracking-[0.34em]">
                 PRESENTA
@@ -82,7 +82,7 @@ export function Hero({ hero }: Props) {
               src="/stickdown.png"
               alt=""
               aria-hidden="true"
-              className="h-16 w-auto opacity-80 mix-blend-screen sm:h-20 lg:h-32 xl:h-40"
+              className="h-28 w-auto self-center opacity-80 mix-blend-screen sm:h-32 lg:h-32 lg:self-auto xl:h-40"
             />
           </div>
         </Reveal>
