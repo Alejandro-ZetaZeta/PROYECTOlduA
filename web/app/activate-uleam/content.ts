@@ -27,7 +27,7 @@ export const activateUleam = {
         details: "Es totalmente gratis, te esperamos!",
       },
       {
-        date: "13 de junio",
+        date: "20 de junio",
         title: "Torneo relámpago de fútbol",
         time: "9:00 a. m.",
         location: "Cancha sintética “El Camping”",

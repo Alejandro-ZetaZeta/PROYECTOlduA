@@ -11,8 +11,8 @@ import { easeOutQuint } from "@/lib/animations";
 // May 22 2026 17:00 Guayaquil time (UTC-5)
 const SEMINAR_TARGET = new Date("2026-05-22T22:00:00Z");
 
-// June 13 2026 09:00 UTC-5
-const TOURNAMENT_TARGET = new Date("2026-06-13T14:00:00Z");
+// June 20 2026 09:00 UTC-5
+const TOURNAMENT_TARGET = new Date("2026-06-20T14:00:00Z");
 
 function useCountdown(target: Date) {
   const calc = () => Math.max(0, Math.floor((target.getTime() - Date.now()) / 1000));
@@ -98,8 +98,19 @@ function TournamentCountdown() {
 }
 
 const SEMINAR_IMG = "/SEMINARIO_DEFE.jpeg";
+const TOURNAMENT_IMG = "/RELAMPAGO_HORIZONTAL.png";
 
-function ImageLightbox({ open, onClose }: { open: boolean; onClose: () => void }) {
+function ImageLightbox({
+  open,
+  onClose,
+  src,
+  alt,
+}: {
+  open: boolean;
+  onClose: () => void;
+  src: string;
+  alt: string;
+}) {
   React.useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -127,8 +138,8 @@ function ImageLightbox({ open, onClose }: { open: boolean; onClose: () => void }
             onClick={(e) => e.stopPropagation()}
           >
             <Image
-              src={SEMINAR_IMG}
-              alt="Seminario de autodefensa"
+              src={src}
+              alt={alt}
               width={1200}
               height={900}
               className="max-h-[85vh] w-auto rounded-xl object-contain shadow-2xl"
@@ -167,6 +178,25 @@ function SeminarImagePanel({ onClick }: { onClick: () => void }) {
   );
 }
 
+function TournamentImagePanel({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label="Ver imagen del torneo"
+      className="group relative hidden h-full w-full cursor-zoom-in overflow-hidden rounded-2xl md:block"
+    >
+      <Image
+        src={TOURNAMENT_IMG}
+        alt="Torneo relámpago de fútbol"
+        fill
+        className="object-contain transition-transform duration-500 group-hover:scale-105"
+        sizes="(max-width: 1280px) 40vw, 30vw"
+      />
+      <div className="absolute inset-0 bg-black/20 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+    </button>
+  );
+}
+
 function CardInner({
   stop,
   idx,
@@ -178,16 +208,16 @@ function CardInner({
 }) {
   return (
     <div className="relative rounded-2xl border border-card-border bg-card p-5 backdrop-blur-sm sm:max-w-[520px]">
-      {idx === 0 && (
+      {(idx === 0 || idx === 1) && (
         <button
           onClick={onEyeClick}
-          aria-label="Ver imagen del seminario"
+          aria-label={idx === 0 ? "Ver imagen del seminario" : "Ver imagen del torneo"}
           className="absolute right-3 top-3 flex items-center justify-center rounded-full border border-white/15 bg-white/5 p-1.5 text-muted/80 transition-colors hover:border-gold/30 hover:text-gold md:hidden"
         >
           <EyeIcon />
         </button>
       )}
-      <div className={`flex flex-wrap items-center gap-x-3 gap-y-2 ${idx === 0 ? "pr-10 md:pr-0" : ""}`}>
+      <div className={`flex flex-wrap items-center gap-x-3 gap-y-2 ${(idx === 0 || idx === 1) ? "pr-10 md:pr-0" : ""}`}>
         <p className="text-[0.65rem] tracking-[0.28em] text-gold">{stop.date.toUpperCase()}</p>
         {stop.highlight ? (
           <span className="rounded-full border border-gold/30 bg-gold/10 px-3 py-0.5 text-[0.6rem] tracking-[0.18em] text-gold">
@@ -244,6 +274,7 @@ function EyeIcon() {
 export function Timeline({ stops }: { stops: RoadmapStop[] }) {
   const ref = React.useRef<HTMLDivElement>(null);
   const [lightboxOpen, setLightboxOpen] = React.useState(false);
+  const [tournamentLightboxOpen, setTournamentLightboxOpen] = React.useState(false);
 
   // useScroll() with no target tracks window scroll — no container check, no warning.
   // We compute the fill range from the element's measured document position instead.
@@ -268,7 +299,18 @@ export function Timeline({ stops }: { stops: RoadmapStop[] }) {
 
   return (
     <>
-    <ImageLightbox open={lightboxOpen} onClose={() => setLightboxOpen(false)} />
+    <ImageLightbox
+      open={lightboxOpen}
+      onClose={() => setLightboxOpen(false)}
+      src={SEMINAR_IMG}
+      alt="Seminario de autodefensa"
+    />
+    <ImageLightbox
+      open={tournamentLightboxOpen}
+      onClose={() => setTournamentLightboxOpen(false)}
+      src={TOURNAMENT_IMG}
+      alt="Torneo relámpago de fútbol"
+    />
     <div ref={ref} className="relative mt-14 pl-10 sm:pl-0">
       {/* Track */}
       <div className="absolute left-3 top-0 h-full w-0.5 bg-white/8 sm:left-1/2 sm:-translate-x-1/2" />
@@ -289,12 +331,10 @@ export function Timeline({ stops }: { stops: RoadmapStop[] }) {
             ? "sm:w-[calc(50%-1rem)] sm:pr-10"
             : "sm:w-[calc(50%-1rem)] sm:pl-10 sm:ml-auto";
 
-          // For the seminar card (idx===0): expand to full width so the image
-          // can occupy the opposite half of the timeline on xl screens.
-          const motionClass = idx === 0 ? "relative w-full" : `relative w-full ${wrapperClass}`;
+          // idx===0 and idx===1 expand to full width so the image occupies the opposite half.
+          const motionClass = (idx === 0 || idx === 1) ? "relative w-full" : `relative w-full ${wrapperClass}`;
 
-          // Card slot always uses its normal half-column classes.
-          // Image slot mirrors the opposite half.
+          // Image slot mirrors the opposite half of the card.
           const imageSlotClass = isLeft
             ? "sm:w-[calc(50%-1rem)] sm:pl-10 sm:ml-auto"
             : "sm:w-[calc(50%-1rem)] sm:pr-10";
@@ -308,23 +348,36 @@ export function Timeline({ stops }: { stops: RoadmapStop[] }) {
               transition={{ duration: 0.58, ease: easeOutQuint }}
               className={motionClass}
             >
-              {/* xl: card in its half + image in the opposite half */}
+              {/* Desktop: card in its half + image in the opposite half */}
               {idx === 0 && (
                 <div className={`hidden md:flex items-stretch gap-0 ${isLeft ? "flex-row" : "flex-row-reverse"}`}>
-                  {/* Card half */}
                   <div className={`${wrapperClass} flex flex-col`}>
                     <CardInner stop={stop} idx={idx} onEyeClick={() => setLightboxOpen(true)} />
                   </div>
-                  {/* Image half */}
                   <div className={`${imageSlotClass} flex items-center justify-center`}>
                     <SeminarImagePanel onClick={() => setLightboxOpen(true)} />
                   </div>
                 </div>
               )}
+              {idx === 1 && (
+                <div className="hidden md:flex flex-row items-stretch gap-0">
+                  {/* Image left, card right */}
+                  <div className={`${imageSlotClass} flex items-center justify-center`}>
+                    <TournamentImagePanel onClick={() => setTournamentLightboxOpen(true)} />
+                  </div>
+                  <div className={`${wrapperClass} flex flex-col`}>
+                    <CardInner stop={stop} idx={idx} onEyeClick={() => setTournamentLightboxOpen(true)} />
+                  </div>
+                </div>
+              )}
 
-              {/* Below xl (or non-seminar cards): normal layout */}
-              <div className={idx === 0 ? "md:hidden" : ""}>
-                <CardInner stop={stop} idx={idx} onEyeClick={() => setLightboxOpen(true)} />
+              {/* Mobile: normal single-column layout */}
+              <div className={(idx === 0 || idx === 1) ? "md:hidden" : ""}>
+                <CardInner
+                  stop={stop}
+                  idx={idx}
+                  onEyeClick={idx === 1 ? () => setTournamentLightboxOpen(true) : () => setLightboxOpen(true)}
+                />
               </div>
             </motion.div>
           );
