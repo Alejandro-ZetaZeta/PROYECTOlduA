@@ -159,7 +159,7 @@ function StandingsTable({ equipos, loading }: { equipos: string[]; loading: bool
         </tbody>
       </table>
       <p className="px-4 py-3 text-center text-[0.6rem] tracking-[0.18em] text-white/20 uppercase">
-        Tabla se actualiza al inicio del torneo · 20 de junio de 2026
+        Tabla se actualiza al inicio del torneo · 13 de junio de 2026
       </p>
     </div>
   );
@@ -172,11 +172,12 @@ function StandingsTable({ equipos, loading }: { equipos: string[]; loading: bool
 function LoginModal({ open, onClose, onSuccess }: { open: boolean; onClose: () => void; onSuccess: () => void }) {
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
+  const [showPassword, setShowPassword] = React.useState(false);
   const [error, setError] = React.useState("");
   const [loading, setLoading] = React.useState(false);
 
   React.useEffect(() => {
-    if (!open) { setEmail(""); setPassword(""); setError(""); }
+    if (!open) { setEmail(""); setPassword(""); setError(""); setShowPassword(false); }
   }, [open]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -230,8 +231,25 @@ function LoginModal({ open, onClose, onSuccess }: { open: boolean; onClose: () =
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-[0.7rem] tracking-[0.2em] text-white/40 uppercase">Contraseña</label>
-                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required
-                  className="rounded-xl border border-white/10 bg-white/4 px-4 py-3 text-sm text-white outline-none focus:border-gold/50" />
+                <div className="relative">
+                  <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} required
+                    className="w-full rounded-xl border border-white/10 bg-white/4 px-4 py-3 pr-11 text-sm text-white outline-none focus:border-gold/50" />
+                  <button type="button" onClick={() => setShowPassword((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 transition-colors hover:text-white/70">
+                    {showPassword ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                        <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                        <line x1="1" y1="1" x2="23" y2="23" />
+                      </svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
               </div>
               {error && <p className="text-xs text-red-400">{error}</p>}
               <button type="submit" disabled={loading}
@@ -395,14 +413,14 @@ export default function RegistroTorneoPage() {
   const [showLogin, setShowLogin]   = React.useState(false);
   const [showAdmin, setShowAdmin]   = React.useState(false);
 
-  const [equipos, setEquipos]       = React.useState<string[]>([]);
+  const [equipos, setEquipos]       = React.useState<{ nombre_equipo: string; genero: string }[]>([]);
   const [loadingEquipos, setLoadingEquipos] = React.useState(true);
+  const [tabGenero, setTabGenero]   = React.useState<"masculino" | "femenino">("masculino");
 
-  // Fetch approved team names (public RPC — returns only nombre_equipo)
   async function fetchEquipos() {
     setLoadingEquipos(true);
     const { data } = await insforge.database.rpc("get_equipos_aprobados");
-    if (data) setEquipos((data as { nombre_equipo: string }[]).map((r) => r.nombre_equipo));
+    if (data) setEquipos(data as { nombre_equipo: string; genero: string }[]);
     setLoadingEquipos(false);
   }
 
@@ -482,7 +500,7 @@ export default function RegistroTorneoPage() {
 
         {/* Header */}
         <div className="mt-10 text-center">
-          <p className="text-[0.65rem] tracking-[0.32em] text-gold">TORNEO RELÁMPAGO DE FÚTBOL · 20 DE JUNIO</p>
+          <p className="text-[0.65rem] tracking-[0.32em] text-gold">TORNEO RELÁMPAGO DE FÚTBOL · 13 DE JUNIO</p>
           <h1 className="mt-4 font-[var(--font-display)] text-3xl tracking-tight text-white sm:text-4xl">Inscripción de equipos</h1>
           <p className="mx-auto mt-4 max-w-md text-sm leading-[1.85] text-white/45">Cancha sintética "El Camping" · 9:00 a. m.</p>
         </div>
@@ -582,7 +600,28 @@ export default function RegistroTorneoPage() {
               POR COMENZAR
             </span>
           </div>
-          <StandingsTable equipos={equipos} loading={loadingEquipos} />
+
+          {/* Gender tab switcher */}
+          <div className="mb-5 flex gap-1 rounded-xl border border-white/8 bg-white/2 p-1 w-fit">
+            {(["masculino", "femenino"] as const).map((g) => (
+              <button
+                key={g}
+                onClick={() => setTabGenero(g)}
+                className={`rounded-lg px-5 py-2 text-[0.65rem] tracking-[0.18em] uppercase transition-all ${
+                  tabGenero === g
+                    ? "bg-gold/15 text-gold border border-gold/30"
+                    : "text-white/35 hover:text-white/60"
+                }`}
+              >
+                {g === "masculino" ? "Masculino" : "Femenino"}
+              </button>
+            ))}
+          </div>
+
+          <StandingsTable
+            equipos={equipos.filter((e) => e.genero === tabGenero).map((e) => e.nombre_equipo)}
+            loading={loadingEquipos}
+          />
           <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
             {[["PJ","Partidos jugados"],["PG","Ganados"],["PE","Empatados"],["PP","Perdidos"],
               ["GF","Goles a favor"],["GC","Goles en contra"],["DG","Diferencia de goles"],["PTS","Puntos"]
