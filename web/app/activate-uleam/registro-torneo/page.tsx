@@ -156,11 +156,11 @@ function StandingsTable({ equipos, loading }: { equipos: string[]; loading: bool
                     {pos}
                   </span>
                 </td>
-                <td className={`px-3 py-3 text-left text-xs ${nombre ? "text-white/80 font-medium" : "text-white/25 italic"}`}>
+                <td className={`px-3 py-3 text-left text-xs ${nombre ? "text-white font-medium" : "text-white/25 italic"}`}>
                   {loading ? <span className="inline-block h-3 w-24 animate-pulse rounded bg-white/10" /> : (nombre ?? "—")}
                 </td>
                 {(["pj","pg","pe","pp","gf","gc","dg","pts"] as const).map((k) => (
-                  <td key={k} className={`px-3 py-3 text-center text-white/25 ${k === "pts" ? "font-semibold text-white/40" : ""}`}>0</td>
+                  <td key={k} className={`px-3 py-3 text-center text-white ${k === "pts" ? "font-semibold text-white" : ""}`}>0</td>
                 ))}
               </tr>
             );
@@ -211,7 +211,8 @@ function LoginModal({ open, onClose, onSuccess }: { open: boolean; onClose: () =
     }
 
     if (typeof window !== "undefined") {
-      localStorage.setItem("is_admin", "true");
+      const expiryTime = Date.now() + 30 * 60 * 1000;
+      localStorage.setItem("is_admin", String(expiryTime));
     }
     setLoading(false);
     onSuccess();
@@ -288,7 +289,23 @@ function AdminPanel({ open, onClose, onApprovalChange }: {
   const [togglingId, setTogglingId] = React.useState<string | null>(null);
   const [adminEmail, setAdminEmail] = React.useState<string | null>(null);
 
+  const verifyAndExtendSession = React.useCallback(() => {
+    if (typeof window === "undefined") return false;
+    const expiry = localStorage.getItem("is_admin");
+    if (!expiry) return false;
+    const expiryNum = parseInt(expiry, 10);
+    if (isNaN(expiryNum) || Date.now() > expiryNum) {
+      localStorage.removeItem("is_admin");
+      insforge.auth.signOut();
+      onClose();
+      return false;
+    }
+    localStorage.setItem("is_admin", String(Date.now() + 30 * 60 * 1000));
+    return true;
+  }, [onClose]);
+
   async function fetchRegistrations() {
+    if (!verifyAndExtendSession()) return;
     setLoadingRegs(true);
     const { data } = await insforge.database
       .from("inscripciones_torneo")
@@ -300,6 +317,7 @@ function AdminPanel({ open, onClose, onApprovalChange }: {
 
   React.useEffect(() => {
     if (open) {
+      if (!verifyAndExtendSession()) return;
       fetchRegistrations();
       insforge.auth.getCurrentUser().then(({ data }) => {
         if (data?.user) {
@@ -310,6 +328,7 @@ function AdminPanel({ open, onClose, onApprovalChange }: {
   }, [open]);
 
   async function toggle(reg: Registration) {
+    if (!verifyAndExtendSession()) return;
     setTogglingId(reg.id);
     await insforge.database
       .from("inscripciones_torneo")
@@ -352,7 +371,30 @@ function AdminPanel({ open, onClose, onApprovalChange }: {
                 )}
               </span>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={fetchRegistrations}
+                disabled={loadingRegs}
+                className="inline-flex items-center gap-1.5 text-[0.65rem] tracking-[0.18em] text-gold/80 transition-colors hover:text-gold disabled:opacity-50"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className={`h-3.5 w-3.5 ${loadingRegs ? "animate-spin" : ""}`}
+                >
+                  <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+                  <path d="M16 3h5v5" />
+                  <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+                  <path d="M8 21H3v-5" />
+                </svg>
+                RECARGAR
+              </button>
+              <span className="text-white/10">|</span>
               <button onClick={handleLogout}
                 className="text-[0.65rem] tracking-[0.18em] text-white/30 transition-colors hover:text-white/60">
                 CERRAR SESIÓN
@@ -385,13 +427,13 @@ function AdminPanel({ open, onClose, onApprovalChange }: {
                   <tbody>
                     {registrations.map((reg, i) => (
                       <tr key={reg.id} className="border-b border-white/4 last:border-0 hover:bg-white/2">
-                        <td className="px-4 py-3 text-center text-xs text-white/30">{i + 1}</td>
-                        <td className="px-4 py-3 text-left text-xs font-medium text-white/80">{reg.nombre_equipo}</td>
-                        <td className="px-4 py-3 text-center text-xs text-white/40 font-mono">{reg.cedula}</td>
-                        <td className="px-4 py-3 text-center text-xs text-white/40">{reg.whatsapp}</td>
-                        <td className="px-4 py-3 text-center text-xs text-white/40">{reg.carrera}</td>
-                        <td className="px-4 py-3 text-center text-xs text-white/40">{reg.nivel}</td>
-                        <td className="px-4 py-3 text-center text-xs text-white/40 capitalize">{reg.genero}</td>
+                        <td className="px-4 py-3 text-center text-xs text-white/50">{i + 1}</td>
+                        <td className="px-4 py-3 text-left text-xs font-medium text-white">{reg.nombre_equipo}</td>
+                        <td className="px-4 py-3 text-center text-xs text-white font-mono">{reg.cedula}</td>
+                        <td className="px-4 py-3 text-center text-xs text-white">{reg.whatsapp}</td>
+                        <td className="px-4 py-3 text-center text-xs text-white">{reg.carrera}</td>
+                        <td className="px-4 py-3 text-center text-xs text-white">{reg.nivel}</td>
+                        <td className="px-4 py-3 text-center text-xs text-white capitalize">{reg.genero}</td>
                         <td className="px-4 py-3 text-center">
                           <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[0.6rem] tracking-[0.15em] ${
                             reg.aprobado ? "bg-emerald-500/15 text-emerald-400" : "bg-white/6 text-white/30"
@@ -446,6 +488,18 @@ export default function RegistroTorneoPage() {
   const [loadingEquipos, setLoadingEquipos] = React.useState(true);
   const [tabGenero, setTabGenero]   = React.useState<"masculino" | "femenino">("masculino");
 
+  const checkIsAdminLoggedIn = React.useCallback(() => {
+    if (typeof window === "undefined") return false;
+    const expiry = localStorage.getItem("is_admin");
+    if (!expiry) return false;
+    const expiryNum = parseInt(expiry, 10);
+    if (isNaN(expiryNum) || Date.now() > expiryNum) {
+      localStorage.removeItem("is_admin");
+      return false;
+    }
+    return true;
+  }, []);
+
   async function fetchEquipos() {
     setLoadingEquipos(true);
     const { data } = await insforge.database.rpc("get_equipos_aprobados");
@@ -456,8 +510,7 @@ export default function RegistroTorneoPage() {
   // Check existing session on mount
   React.useEffect(() => {
     fetchEquipos();
-    const isAdminLoggedIn = typeof window !== "undefined" && localStorage.getItem("is_admin") === "true";
-    if (isAdminLoggedIn) {
+    if (checkIsAdminLoggedIn()) {
       insforge.auth.getCurrentUser().then(async ({ data }) => {
         if (!data?.user) {
           localStorage.removeItem("is_admin");
@@ -474,7 +527,7 @@ export default function RegistroTorneoPage() {
         localStorage.removeItem("is_admin");
       });
     }
-  }, []);
+  }, [checkIsAdminLoggedIn]);
 
   // Keyboard easter egg: type /login anywhere (not in inputs)
   React.useEffect(() => {
@@ -506,7 +559,15 @@ export default function RegistroTorneoPage() {
     setState("submitting");
     setErrorMsg("");
     const { error } = await insforge.database.from("inscripciones_torneo").insert([{ ...form }]);
-    if (error) { setState("error"); setErrorMsg("No se pudo guardar tu inscripción. Intenta de nuevo."); return; }
+    if (error) {
+      setState("error");
+      if (error.code === "23505") {
+        setCedulaError("Esta cédula ya tiene un equipo registrado.");
+      } else {
+        setErrorMsg("No se pudo guardar tu inscripción. Intenta de nuevo.");
+      }
+      return;
+    }
     setState("success");
     setForm(EMPTY_FORM);
     setShowForm(false);
@@ -682,8 +743,7 @@ export default function RegistroTorneoPage() {
           </Link>
           <button
             onClick={() => {
-              const isAdminLoggedIn = typeof window !== "undefined" && localStorage.getItem("is_admin") === "true";
-              if (isAdminLoggedIn) {
+              if (checkIsAdminLoggedIn()) {
                 setShowAdmin(true);
               } else {
                 setShowLogin(true);
