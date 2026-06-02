@@ -18,6 +18,7 @@ interface FormData {
   carrera: string;
   nivel: string;
   nombre_equipo: string;
+  genero: string;
 }
 
 interface Registration {
@@ -28,6 +29,7 @@ interface Registration {
   carrera: string;
   nivel: string;
   nombre_equipo: string;
+  genero: string;
   aprobado: boolean;
   created_at: string;
 }
@@ -326,7 +328,7 @@ function AdminPanel({ open, onClose, onApprovalChange }: {
                 <table className="w-full min-w-[780px] border-collapse text-sm">
                   <thead>
                     <tr className="border-b border-white/8">
-                      {["#", "Equipo", "Cédula", "WhatsApp", "Carrera", "Nivel", "Estado", ""].map((h, i) => (
+                      {["#", "Equipo", "Cédula", "WhatsApp", "Carrera", "Nivel", "Categoría", "Estado", ""].map((h, i) => (
                         <th key={i} className={`px-4 py-3 text-[0.6rem] tracking-[0.2em] font-medium text-white/35 uppercase ${i <= 1 ? "text-left" : "text-center"}`}>
                           {h}
                         </th>
@@ -342,6 +344,7 @@ function AdminPanel({ open, onClose, onApprovalChange }: {
                         <td className="px-4 py-3 text-center text-xs text-white/40">{reg.whatsapp}</td>
                         <td className="px-4 py-3 text-center text-xs text-white/40">{reg.carrera}</td>
                         <td className="px-4 py-3 text-center text-xs text-white/40">{reg.nivel}</td>
+                        <td className="px-4 py-3 text-center text-xs text-white/40 capitalize">{reg.genero}</td>
                         <td className="px-4 py-3 text-center">
                           <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[0.6rem] tracking-[0.15em] ${
                             reg.aprobado ? "bg-emerald-500/15 text-emerald-400" : "bg-white/6 text-white/30"
@@ -379,7 +382,7 @@ function AdminPanel({ open, onClose, onApprovalChange }: {
 // Main page
 // ---------------------------------------------------------------------------
 
-const EMPTY_FORM: FormData = { cedula: "", email: "", whatsapp: "", carrera: "", nivel: "", nombre_equipo: "" };
+const EMPTY_FORM: FormData = { cedula: "", email: "", whatsapp: "", carrera: "", nivel: "", nombre_equipo: "", genero: "" };
 const NIVELES = ["1°","2°","3°","4°","5°","6°","7°","8°","9°","10°"];
 
 export default function RegistroTorneoPage() {
@@ -537,6 +540,8 @@ export default function RegistroTorneoPage() {
                     value={form.carrera} onChange={set("carrera")} />
                   <SelectInput label="Nivel / semestre" id="nivel" value={form.nivel} onChange={set("nivel")}
                     options={NIVELES} placeholder="Selecciona tu nivel" />
+                  <SelectInput label="Categoría" id="genero" value={form.genero} onChange={set("genero")}
+                    options={["masculino", "femenino"]} placeholder="Selecciona categoría" />
                   <FieldInput label="Nombre del equipo" id="nombre_equipo" placeholder="Ej. Los Cracks del Bloque C"
                     value={form.nombre_equipo} onChange={set("nombre_equipo")} />
                 </div>
