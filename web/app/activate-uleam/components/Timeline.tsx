@@ -11,8 +11,8 @@ import { easeOutQuint } from "@/lib/animations";
 // May 22 2026 17:00 Guayaquil time (UTC-5)
 const SEMINAR_TARGET = new Date("2026-05-22T22:00:00Z");
 
-// June 20 2026 09:00 UTC-5
-const TOURNAMENT_TARGET = new Date("2026-06-20T14:00:00Z");
+// June 13 2026 09:00 UTC-5
+const TOURNAMENT_TARGET = new Date("2026-06-13T14:00:00Z");
 
 function useCountdown(target: Date) {
   const calc = () => Math.max(0, Math.floor((target.getTime() - Date.now()) / 1000));
@@ -97,19 +97,22 @@ function TournamentCountdown() {
   );
 }
 
-const TOURNAMENT_IMG = "/RELAMPAGO_HORIZONTAL.png";
+const TOURNAMENT_IMG_HOR = "/RELAMPAGO_HOR.jpeg";
+const TOURNAMENT_IMG_VER = "/RELAMPAGO_VER.jpeg";
 const SEMINAR_VIDEO_ID = "xacpk5u";
 const SEMINAR_EMBED = `https://www.dailymotion.com/embed/video/${SEMINAR_VIDEO_ID}?quality=2160&autoplay=1&mute=0`;
 
 function ImageLightbox({
   open,
   onClose,
-  src,
+  srcHor,
+  srcVer,
   alt,
 }: {
   open: boolean;
   onClose: () => void;
-  src: string;
+  srcHor: string;
+  srcVer: string;
   alt: string;
 }) {
   React.useEffect(() => {
@@ -138,13 +141,26 @@ function ImageLightbox({
             className="relative max-h-[90vh] max-w-[90vw]"
             onClick={(e) => e.stopPropagation()}
           >
-            <Image
-              src={src}
-              alt={alt}
-              width={1200}
-              height={900}
-              className="max-h-[85vh] w-auto rounded-xl object-contain shadow-2xl"
-            />
+            {/* Desktop: horizontal image */}
+            <div className="hidden md:block">
+              <Image
+                src={srcHor}
+                alt={alt}
+                width={1200}
+                height={900}
+                className="max-h-[85vh] w-auto rounded-xl object-contain shadow-2xl"
+              />
+            </div>
+            {/* Mobile: vertical image */}
+            <div className="block md:hidden">
+              <Image
+                src={srcVer}
+                alt={alt}
+                width={900}
+                height={1200}
+                className="max-h-[80vh] w-auto rounded-xl object-contain shadow-2xl"
+              />
+            </div>
             <button
               onClick={onClose}
               className="absolute -right-3 -top-3 flex h-7 w-7 items-center justify-center rounded-full border border-white/20 bg-black/70 text-white/80 hover:text-white"
@@ -246,7 +262,7 @@ function TournamentImagePanel({ onClick }: { onClick: () => void }) {
       className="group relative hidden h-full w-full cursor-zoom-in overflow-hidden rounded-2xl md:block"
     >
       <Image
-        src={TOURNAMENT_IMG}
+        src={TOURNAMENT_IMG_HOR}
         alt="Torneo relámpago de fútbol"
         fill
         loading="eager"
@@ -364,7 +380,8 @@ export function Timeline({ stops }: { stops: RoadmapStop[] }) {
     <ImageLightbox
       open={tournamentLightboxOpen}
       onClose={() => setTournamentLightboxOpen(false)}
-      src={TOURNAMENT_IMG}
+      srcHor={TOURNAMENT_IMG_HOR}
+      srcVer={TOURNAMENT_IMG_VER}
       alt="Torneo relámpago de fútbol"
     />
     <div ref={ref} className="relative mt-14 pl-10 sm:pl-0">

@@ -201,6 +201,9 @@ function LoginModal({ open, onClose, onSuccess }: { open: boolean; onClose: () =
       return;
     }
 
+    if (typeof window !== "undefined") {
+      localStorage.setItem("is_admin", "true");
+    }
     setLoading(false);
     onSuccess();
   }
@@ -302,6 +305,9 @@ function AdminPanel({ open, onClose, onApprovalChange }: {
 
   async function handleLogout() {
     await insforge.auth.signOut();
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("is_admin");
+    }
     onClose();
   }
 
@@ -427,12 +433,24 @@ export default function RegistroTorneoPage() {
   // Check existing session on mount
   React.useEffect(() => {
     fetchEquipos();
-    insforge.auth.getCurrentUser().then(async ({ data }) => {
-      if (!data?.user) return;
-      const { data: profile } = await insforge.database
-        .from("profiles").select("role").eq("auth_id", data.user.id).single();
-      if (profile?.role === "admin") setShowAdmin(true);
-    });
+    const isAdminLoggedIn = typeof window !== "undefined" && localStorage.getItem("is_admin") === "true";
+    if (isAdminLoggedIn) {
+      insforge.auth.getCurrentUser().then(async ({ data }) => {
+        if (!data?.user) {
+          localStorage.removeItem("is_admin");
+          return;
+        }
+        const { data: profile } = await insforge.database
+          .from("profiles").select("role").eq("auth_id", data.user.id).single();
+        if (profile?.role === "admin") {
+          setShowAdmin(true);
+        } else {
+          localStorage.removeItem("is_admin");
+        }
+      }).catch(() => {
+        localStorage.removeItem("is_admin");
+      });
+    }
   }, []);
 
   // Keyboard easter egg: type /login anywhere (not in inputs)
