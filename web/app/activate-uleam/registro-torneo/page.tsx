@@ -65,6 +65,15 @@ function BackArrow() {
   );
 }
 
+function UserIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  );
+}
+
 function FieldInput({ label, id, type = "text", placeholder, value, onChange, hint, error }: {
   label: string; id: string; type?: string; placeholder: string;
   value: string; onChange: (v: string) => void; hint?: string; error?: string;
@@ -277,6 +286,7 @@ function AdminPanel({ open, onClose, onApprovalChange }: {
   const [registrations, setRegistrations] = React.useState<Registration[]>([]);
   const [loadingRegs, setLoadingRegs] = React.useState(false);
   const [togglingId, setTogglingId] = React.useState<string | null>(null);
+  const [adminEmail, setAdminEmail] = React.useState<string | null>(null);
 
   async function fetchRegistrations() {
     setLoadingRegs(true);
@@ -289,7 +299,14 @@ function AdminPanel({ open, onClose, onApprovalChange }: {
   }
 
   React.useEffect(() => {
-    if (open) fetchRegistrations();
+    if (open) {
+      fetchRegistrations();
+      insforge.auth.getCurrentUser().then(({ data }) => {
+        if (data?.user) {
+          setAdminEmail(data.user.email);
+        }
+      });
+    }
   }, [open]);
 
   async function toggle(reg: Registration) {
@@ -325,8 +342,14 @@ function AdminPanel({ open, onClose, onApprovalChange }: {
           <div className="flex shrink-0 items-center justify-between border-b border-white/8 px-6 py-4">
             <div className="flex items-center gap-4">
               <p className="text-[0.6rem] tracking-[0.28em] text-gold uppercase">Panel Admin</p>
-              <span className="text-[0.65rem] text-white/30">
-                {aprobados} aprobados · {registrations.length} total
+              <span className="text-[0.65rem] text-white/30 flex items-center gap-2">
+                <span>{aprobados} aprobados · {registrations.length} total</span>
+                {adminEmail && (
+                  <>
+                    <span className="text-white/10">|</span>
+                    <span className="text-white/40 font-mono text-[0.6rem]">{adminEmail}</span>
+                  </>
+                )}
               </span>
             </div>
             <div className="flex items-center gap-3">
@@ -652,11 +675,25 @@ export default function RegistroTorneoPage() {
         </div>
 
         {/* Footer */}
-        <div className="mt-14 text-center">
+        <div className="mt-16 flex items-center justify-between border-t border-white/5 pt-8">
           <Link href="/activate-uleam"
             className="inline-flex items-center gap-2 text-[0.7rem] tracking-[0.18em] text-white/30 transition-colors hover:text-white/60">
             <BackArrow />VOLVER AL EVENTO
           </Link>
+          <button
+            onClick={() => {
+              const isAdminLoggedIn = typeof window !== "undefined" && localStorage.getItem("is_admin") === "true";
+              if (isAdminLoggedIn) {
+                setShowAdmin(true);
+              } else {
+                setShowLogin(true);
+              }
+            }}
+            title="Administración"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/4 text-white/30 transition-colors hover:border-gold/40 hover:bg-gold/10 hover:text-gold"
+          >
+            <UserIcon />
+          </button>
         </div>
       </div>
     </div>
