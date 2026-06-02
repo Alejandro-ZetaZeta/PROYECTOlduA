@@ -97,8 +97,9 @@ function TournamentCountdown() {
   );
 }
 
-const SEMINAR_IMG = "/SEMINARIO_DEFE.jpeg";
 const TOURNAMENT_IMG = "/RELAMPAGO_HORIZONTAL.png";
+const SEMINAR_VIDEO_ID = "xaclohw";
+const SEMINAR_EMBED = `https://www.dailymotion.com/embed/video/${SEMINAR_VIDEO_ID}?quality=1080&autoplay=1`;
 
 function ImageLightbox({
   open,
@@ -158,22 +159,81 @@ function ImageLightbox({
   );
 }
 
-function SeminarImagePanel({ onClick }: { onClick: () => void }) {
+function VideoModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  React.useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [open, onClose]);
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.22 }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8"
+          style={{ backdropFilter: "blur(20px)", background: "rgba(0,0,0,0.75)" }}
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ scale: 0.88, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.88, opacity: 0 }}
+            transition={{ duration: 0.3, ease: easeOutQuint }}
+            className="relative w-full max-w-3xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative w-full overflow-hidden rounded-2xl shadow-2xl" style={{ paddingBottom: "56.25%" }}>
+              <iframe
+                src={SEMINAR_EMBED}
+                title="Seminario de defensa personal"
+                allow="autoplay; fullscreen"
+                referrerPolicy="strict-origin-when-cross-origin"
+                className="absolute inset-0 h-full w-full border-0"
+              />
+            </div>
+            <button
+              onClick={onClose}
+              className="absolute -right-3 -top-3 flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-black/80 text-white/80 transition-colors hover:text-white"
+              aria-label="Cerrar"
+            >
+              ✕
+            </button>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+function SeminarVideoPanel({ onClick }: { onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      aria-label="Ver imagen del seminario"
-      className="group relative hidden h-full w-full cursor-zoom-in overflow-hidden rounded-2xl md:block"
+      aria-label="Reproducir video del seminario"
+      className="group relative hidden h-full w-full min-h-[220px] cursor-pointer overflow-hidden rounded-2xl md:block"
     >
-      <Image
-        src={SEMINAR_IMG}
-        alt="Seminario de autodefensa"
-        fill
-        loading="eager"
-        className="object-contain transition-transform duration-500 group-hover:scale-105"
-        sizes="(max-width: 1280px) 40vw, 30vw"
+      {/* Thumbnail */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={`https://www.dailymotion.com/thumbnail/video/${SEMINAR_VIDEO_ID}`}
+        alt="Seminario de defensa personal"
+        className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
       />
-      <div className="absolute inset-0 bg-black/20 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+      {/* Scrim */}
+      <div className="absolute inset-0 bg-black/35 transition-opacity duration-300 group-hover:bg-black/50" />
+      {/* Play button */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-white/70 bg-black/50 shadow-xl transition-all duration-300 group-hover:scale-110 group-hover:border-white group-hover:bg-black/70">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="ml-1 h-7 w-7 text-white">
+            <polygon points="5,3 19,12 5,21" />
+          </svg>
+        </div>
+      </div>
     </button>
   );
 }
@@ -189,6 +249,7 @@ function TournamentImagePanel({ onClick }: { onClick: () => void }) {
         src={TOURNAMENT_IMG}
         alt="Torneo relámpago de fútbol"
         fill
+        loading="eager"
         className="object-contain transition-transform duration-500 group-hover:scale-105"
         sizes="(max-width: 1280px) 40vw, 30vw"
       />
@@ -211,7 +272,7 @@ function CardInner({
       {(idx === 0 || idx === 1) && (
         <button
           onClick={onEyeClick}
-          aria-label={idx === 0 ? "Ver imagen del seminario" : "Ver imagen del torneo"}
+          aria-label={idx === 0 ? "Ver video del seminario" : "Ver imagen del torneo"}
           className="absolute right-3 top-3 flex items-center justify-center rounded-full border border-white/15 bg-white/5 p-1.5 text-muted/80 transition-colors hover:border-gold/30 hover:text-gold md:hidden"
         >
           <EyeIcon />
@@ -299,12 +360,7 @@ export function Timeline({ stops }: { stops: RoadmapStop[] }) {
 
   return (
     <>
-    <ImageLightbox
-      open={lightboxOpen}
-      onClose={() => setLightboxOpen(false)}
-      src={SEMINAR_IMG}
-      alt="Seminario de autodefensa"
-    />
+    <VideoModal open={lightboxOpen} onClose={() => setLightboxOpen(false)} />
     <ImageLightbox
       open={tournamentLightboxOpen}
       onClose={() => setTournamentLightboxOpen(false)}
@@ -355,7 +411,7 @@ export function Timeline({ stops }: { stops: RoadmapStop[] }) {
                     <CardInner stop={stop} idx={idx} onEyeClick={() => setLightboxOpen(true)} />
                   </div>
                   <div className={`${imageSlotClass} flex items-center justify-center`}>
-                    <SeminarImagePanel onClick={() => setLightboxOpen(true)} />
+                    <SeminarVideoPanel onClick={() => setLightboxOpen(true)} />
                   </div>
                 </div>
               )}

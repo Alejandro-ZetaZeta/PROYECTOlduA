@@ -13,3 +13,8 @@
 .roo
 .trae
 .windsurf
+
+# deps
+node_modules
+.env*
+

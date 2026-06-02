@@ -9,7 +9,7 @@ import { EventFooter } from "./sections/Footer";
 export const dynamic = "force-static";
 
 export const metadata: Metadata = {
-  title: "Activa ULEAM | LDU-A ULEAM",
+  title: "Activate ULEAM | LDU-A ",
   description:
     "Deporte e integracion estudiantil: cronograma de actividades de LDU-A ULEAM (Extension Chone).",
 };
