@@ -100,7 +100,7 @@ function TournamentCountdown() {
 const TOURNAMENT_IMG_HOR = "/RELAMPAGO_HOR.jpeg";
 const TOURNAMENT_IMG_VER = "/RELAMPAGO_VER.jpeg";
 const SEMINAR_VIDEO_ID = "xacpk5u";
-const SEMINAR_EMBED = `https://www.dailymotion.com/embed/video/${SEMINAR_VIDEO_ID}?quality=2160&autoplay=1&mute=0`;
+const SEMINAR_EMBED = `https://www.dailymotion.com/embed/video/${SEMINAR_VIDEO_ID}?quality=2160`;
 
 function ImageLightbox({
   open,
