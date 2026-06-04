@@ -99,6 +99,7 @@ function TournamentCountdown() {
 
 const TOURNAMENT_IMG_HOR = "/RELAMPAGO_HOR.jpeg";
 const TOURNAMENT_IMG_VER = "/RELAMPAGO_VER.jpeg";
+const RACE_IMG = "/5kPROX.jpeg";
 const SEMINAR_VIDEO_ID = "xacpk5u";
 const SEMINAR_EMBED = `https://www.dailymotion.com/embed/video/${SEMINAR_VIDEO_ID}?quality=2160`;
 
@@ -274,6 +275,26 @@ function TournamentImagePanel({ onClick }: { onClick: () => void }) {
   );
 }
 
+function RaceImagePanel({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label="Ver imagen de la carrera"
+      className="group relative hidden h-full w-full cursor-zoom-in overflow-hidden rounded-2xl md:block"
+    >
+      <Image
+        src={RACE_IMG}
+        alt="Gran carrera LDU 5K"
+        fill
+        loading="eager"
+        className="object-contain transition-transform duration-500 group-hover:scale-105"
+        sizes="(max-width: 1280px) 40vw, 30vw"
+      />
+      <div className="absolute inset-0 bg-black/20 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+    </button>
+  );
+}
+
 function CardInner({
   stop,
   idx,
@@ -285,23 +306,23 @@ function CardInner({
 }) {
   return (
     <div className="relative rounded-2xl border border-card-border bg-card p-5 backdrop-blur-sm sm:max-w-[520px]">
-      {(idx === 0 || idx === 1) && (
+      {(idx === 0 || idx === 1 || idx === 2) && (
         <button
           onClick={onEyeClick}
-          aria-label={idx === 0 ? "Ver video del seminario" : "Ver imagen del torneo"}
+          aria-label={idx === 0 ? "Ver video del seminario" : idx === 1 ? "Ver imagen del torneo" : "Ver imagen de la carrera"}
           className="absolute right-3 top-3 flex items-center justify-center rounded-full border border-white/15 bg-white/5 p-1.5 text-muted/80 transition-colors hover:border-gold/30 hover:text-gold md:hidden"
         >
           <EyeIcon />
         </button>
       )}
-      <div className={`flex flex-wrap items-center gap-x-3 gap-y-2 ${(idx === 0 || idx === 1) ? "pr-10 md:pr-0" : ""}`}>
+      <div className={`flex flex-wrap items-center gap-x-3 gap-y-2 ${(idx === 0 || idx === 1 || idx === 2) ? "pr-10 md:pr-0" : ""}`}>
         <p className="text-[0.65rem] tracking-[0.28em] text-gold">{stop.date.toUpperCase()}</p>
         {stop.highlight ? (
           <span className="rounded-full border border-gold/30 bg-gold/10 px-3 py-0.5 text-[0.6rem] tracking-[0.18em] text-gold">
             {stop.highlight}
           </span>
         ) : null}
-        {idx > 0 && (
+        {idx > 0 && idx !== 1 && (
           <span className="rounded-full border border-gold/30 bg-gold/20 px-3 py-0.5 text-[0.6rem] tracking-[0.18em] text-muted/80">
             PRÓXIMAMENTE
           </span>
@@ -314,7 +335,16 @@ function CardInner({
         <div className="mt-3 flex flex-col gap-1.5 text-sm leading-[1.75] text-muted">
           {stop.location ? <p>{stop.location}</p> : null}
           {stop.time ? <p>{stop.time}</p> : null}
-          {stop.details ? <p>{stop.details}</p> : null}
+          {stop.details ? (
+            <p>
+              {stop.details.split("<br>").map((line, i) => (
+                <React.Fragment key={i}>
+                  {i > 0 && <br />}
+                  {line}
+                </React.Fragment>
+              ))}
+            </p>
+          ) : null}
         </div>
       )}
       {idx === 0 && <SeminarCountdown />}
@@ -352,6 +382,7 @@ export function Timeline({ stops }: { stops: RoadmapStop[] }) {
   const ref = React.useRef<HTMLDivElement>(null);
   const [lightboxOpen, setLightboxOpen] = React.useState(false);
   const [tournamentLightboxOpen, setTournamentLightboxOpen] = React.useState(false);
+  const [raceLightboxOpen, setRaceLightboxOpen] = React.useState(false);
 
   // useScroll() with no target tracks window scroll — no container check, no warning.
   // We compute the fill range from the element's measured document position instead.
@@ -384,6 +415,13 @@ export function Timeline({ stops }: { stops: RoadmapStop[] }) {
       srcVer={TOURNAMENT_IMG_VER}
       alt="Torneo relámpago de fútbol"
     />
+    <ImageLightbox
+      open={raceLightboxOpen}
+      onClose={() => setRaceLightboxOpen(false)}
+      srcHor={RACE_IMG}
+      srcVer={RACE_IMG}
+      alt="Gran carrera LDU 5K"
+    />
     <div ref={ref} className="relative mt-14 pl-10 sm:pl-0">
       {/* Track */}
       <div className="absolute left-3 top-0 h-full w-0.5 bg-white/8 sm:left-1/2 sm:-translate-x-1/2" />
@@ -404,8 +442,8 @@ export function Timeline({ stops }: { stops: RoadmapStop[] }) {
             ? "sm:w-[calc(50%-1rem)] sm:pr-10"
             : "sm:w-[calc(50%-1rem)] sm:pl-10 sm:ml-auto";
 
-          // idx===0 and idx===1 expand to full width so the image occupies the opposite half.
-          const motionClass = (idx === 0 || idx === 1) ? "relative w-full" : `relative w-full ${wrapperClass}`;
+          // idx===0, idx===1 and idx===2 expand to full width so the image occupies the opposite half.
+          const motionClass = (idx === 0 || idx === 1 || idx === 2) ? "relative w-full" : `relative w-full ${wrapperClass}`;
 
           // Image slot mirrors the opposite half of the card.
           const imageSlotClass = isLeft
@@ -443,13 +481,29 @@ export function Timeline({ stops }: { stops: RoadmapStop[] }) {
                   </div>
                 </div>
               )}
+              {idx === 2 && (
+                <div className={`hidden md:flex items-stretch gap-0 ${isLeft ? "flex-row" : "flex-row-reverse"}`}>
+                  <div className={`${wrapperClass} flex flex-col`}>
+                    <CardInner stop={stop} idx={idx} onEyeClick={() => setRaceLightboxOpen(true)} />
+                  </div>
+                  <div className={`${imageSlotClass} flex items-center justify-center`}>
+                    <RaceImagePanel onClick={() => setRaceLightboxOpen(true)} />
+                  </div>
+                </div>
+              )}
 
               {/* Mobile: normal single-column layout */}
-              <div className={(idx === 0 || idx === 1) ? "md:hidden" : ""}>
+              <div className={(idx === 0 || idx === 1 || idx === 2) ? "md:hidden" : ""}>
                 <CardInner
                   stop={stop}
                   idx={idx}
-                  onEyeClick={idx === 1 ? () => setTournamentLightboxOpen(true) : () => setLightboxOpen(true)}
+                  onEyeClick={
+                    idx === 0
+                      ? () => setLightboxOpen(true)
+                      : idx === 1
+                      ? () => setTournamentLightboxOpen(true)
+                      : () => setRaceLightboxOpen(true)
+                  }
                 />
               </div>
             </motion.div>

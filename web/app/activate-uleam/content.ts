@@ -36,7 +36,7 @@ export const activateUleam = {
         date: "4 de julio",
         title: "Gran carrera LDU 5K",
         time: "8:00 a. m.",
-        details: "Con apoyo de CAI (atención médica para participantes)",
+        details: "En colaboración con el GAD Municipal Chone <br> Contaremos con increíbles premios. <br> Con apoyo de CAI (atención médica para participantes)",
       },
       {
         date: "3 de julio",
