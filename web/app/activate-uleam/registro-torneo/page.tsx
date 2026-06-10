@@ -159,6 +159,19 @@ function SelectInput({ label, id, value, onChange, options, placeholder }: {
 }
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function shuffleArray<T>(array: T[]): T[] {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// ---------------------------------------------------------------------------
 // Simple standings (knockout — no GD, no points)
 // ---------------------------------------------------------------------------
 
@@ -171,11 +184,25 @@ function computeSimpleStandings(
 
   for (const p of partidos) {
     if (p.estado !== "finalizado" || p.equipo_visitante === "BYE") continue;
-    const local = map.get(p.equipo_local) ?? { pj: 0, pg: 0, pp: 0 };
-    const visit = map.get(p.equipo_visitante) ?? { pj: 0, pg: 0, pp: 0 };
+    if (!map.has(p.equipo_local) || !map.has(p.equipo_visitante)) continue;
+    const local = map.get(p.equipo_local)!;
+    const visit = map.get(p.equipo_visitante)!;
     local.pj++; visit.pj++;
-    if (p.goles_local > p.goles_visitante) { local.pg++; visit.pp++; }
-    else { visit.pg++; local.pp++; }
+    if (p.goles_local > p.goles_visitante) {
+      local.pg++;
+      visit.pp++;
+    } else if (p.goles_visitante > p.goles_local) {
+      visit.pg++;
+      local.pp++;
+    } else if (p.penales_local != null && p.penales_visitante != null) {
+      if (p.penales_local > p.penales_visitante) {
+        local.pg++;
+        visit.pp++;
+      } else {
+        visit.pg++;
+        local.pp++;
+      }
+    }
     map.set(p.equipo_local, local);
     map.set(p.equipo_visitante, visit);
   }
@@ -386,7 +413,17 @@ function MatchPanel({ equipos, partidos, loading, finalizado, finalizando, onPar
   const pFiltered = partidos.filter((p) => p.genero === tabGenero);
   const rondas = [...new Set(pFiltered.map((p) => p.ronda))].sort((a, b) => a - b);
   const maxRonda = rondas.length > 0 ? Math.max(...rondas) : 0;
-  const hasPending = pFiltered.some((p) => p.estado === "pendiente");
+  // Only check the current (latest) round — prior rounds are already baked into bracket advancement
+  const currentRoundMatches = pFiltered.filter((p) => p.ronda === maxRonda);
+  const hasPending = currentRoundMatches.some((p) => p.estado === "pendiente");
+  const hasUnresolvedTie = currentRoundMatches.some(
+    (p) =>
+      p.estado === "finalizado" &&
+      p.goles_local === p.goles_visitante &&
+      p.equipo_visitante !== "BYE" &&
+      (p.penales_local == null || p.penales_visitante == null)
+  );
+  const isRoundResolved = !hasPending && !hasUnresolvedTie;
 
   function getWinner(p: Partido): string {
     if (p.equipo_visitante === "BYE") return p.equipo_local;
@@ -402,11 +439,16 @@ function MatchPanel({ equipos, partidos, loading, finalizado, finalizando, onPar
   }
 
   function getNextTeams(): string[] {
-    const finished = pFiltered.filter((p) => p.estado === "finalizado");
-    if (finished.length === 0) return allTeams;
-    const lastRound = finished.filter((p) => p.ronda === maxRonda);
-    // Only include matches that have a determined winner
-    return lastRound.map(getWinner).filter(Boolean);
+    if (pFiltered.length === 0) return allTeams;
+    // Find the last round where EVERY match is finalizado
+    const lastCompletedRonda = [...rondas].reverse().find(
+      (r) => pFiltered.filter((p) => p.ronda === r).every((p) => p.estado === "finalizado")
+    );
+    if (lastCompletedRonda == null) return allTeams;
+    return pFiltered
+      .filter((p) => p.ronda === lastCompletedRonda)
+      .map(getWinner)
+      .filter(Boolean);
   }
 
   function getRoundLabel(ronda: number): string {
@@ -420,18 +462,22 @@ function MatchPanel({ equipos, partidos, loading, finalizado, finalizando, onPar
   }
 
   const nextTeams = getNextTeams();
-  const isChampionDetermined = !hasPending && nextTeams.length === 1 && maxRonda > 0;
+  const isChampionDetermined = isRoundResolved && nextTeams.length === 1 && maxRonda > 0;
 
   async function handleGenerate() {
     setGenError("");
     if (nextTeams.length < 2) { setGenError("Se necesitan al menos 2 equipos."); return; }
     const nextRonda = maxRonda + 1;
-    const toInsert: Omit<Partido, "id" | "created_at">[] = [];
-    for (let i = 0; i + 1 < nextTeams.length; i += 2) {
-      toInsert.push({ equipo_local: nextTeams[i], equipo_visitante: nextTeams[i + 1], goles_local: 0, goles_visitante: 0, genero: tabGenero, ronda: nextRonda, estado: "pendiente" });
+    let teamsToPair = [...nextTeams];
+    if (nextRonda === 1) {
+      teamsToPair = shuffleArray(teamsToPair);
     }
-    if (nextTeams.length % 2 !== 0) {
-      const bye = nextTeams[nextTeams.length - 1];
+    const toInsert: Omit<Partido, "id" | "created_at">[] = [];
+    for (let i = 0; i + 1 < teamsToPair.length; i += 2) {
+      toInsert.push({ equipo_local: teamsToPair[i], equipo_visitante: teamsToPair[i + 1], goles_local: 0, goles_visitante: 0, genero: tabGenero, ronda: nextRonda, estado: "pendiente" });
+    }
+    if (teamsToPair.length % 2 !== 0) {
+      const bye = teamsToPair[teamsToPair.length - 1];
       toInsert.push({ equipo_local: bye, equipo_visitante: "BYE", goles_local: 1, goles_visitante: 0, genero: tabGenero, ronda: nextRonda, estado: "finalizado" });
     }
     setGenerating(true);
@@ -510,7 +556,7 @@ function MatchPanel({ equipos, partidos, loading, finalizado, finalizando, onPar
       )}
 
       {/* Generate button */}
-      {!hasPending && !isChampionDetermined && (
+      {isRoundResolved && !isChampionDetermined && (
         <div className="flex flex-col gap-2">
           {allTeams.length < 2 ? (
             <p className="text-xs text-white/30 italic">Necesitas al menos 2 equipos aprobados en esta categoría.</p>
@@ -1095,6 +1141,12 @@ export default function RegistroTorneoPage() {
     const real = finished.filter((p) => p.ronda === maxR && p.equipo_visitante !== "BYE");
     if (real.length !== 1) return null;
     const f = real[0];
+    if (f.goles_local === f.goles_visitante) {
+      if (f.penales_local != null && f.penales_visitante != null) {
+        return f.penales_local > f.penales_visitante ? f.equipo_local : f.equipo_visitante;
+      }
+      return null;
+    }
     return f.goles_local > f.goles_visitante ? f.equipo_local : f.equipo_visitante;
   }
 
