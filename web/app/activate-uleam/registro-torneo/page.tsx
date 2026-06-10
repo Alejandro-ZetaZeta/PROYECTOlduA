@@ -46,6 +46,8 @@ interface Partido {
   equipo_visitante: string;
   goles_local: number;
   goles_visitante: number;
+  penales_local?: number | null;
+  penales_visitante?: number | null;
   genero: string;
   ronda: number;
   estado: "pendiente" | "finalizado";
@@ -375,6 +377,10 @@ function MatchPanel({ equipos, partidos, loading, finalizado, finalizando, onPar
   const [savingId, setSavingId] = React.useState<string | null>(null);
   const [saveErrors, setSaveErrors] = React.useState<Record<string, string>>({});
   const [deletingId, setDeletingId] = React.useState<string | null>(null);
+  const [penaltyOpen, setPenaltyOpen] = React.useState<string | null>(null);
+  const [penaltyScores, setPenaltyScores] = React.useState<Record<string, { local: string; visitante: string }>>({});
+  const [savingPenaltyId, setSavingPenaltyId] = React.useState<string | null>(null);
+  const [penaltyErrors, setPenaltyErrors] = React.useState<Record<string, string>>();
 
   const allTeams = equipos.filter((e) => e.genero === tabGenero).map((e) => e.nombre_equipo);
   const pFiltered = partidos.filter((p) => p.genero === tabGenero);
@@ -384,6 +390,14 @@ function MatchPanel({ equipos, partidos, loading, finalizado, finalizando, onPar
 
   function getWinner(p: Partido): string {
     if (p.equipo_visitante === "BYE") return p.equipo_local;
+    if (p.goles_local === p.goles_visitante) {
+      // Decide by penalty shootout result
+      if (p.penales_local != null && p.penales_visitante != null) {
+        return p.penales_local > p.penales_visitante ? p.equipo_local : p.equipo_visitante;
+      }
+      // Tie without penalties recorded yet — no winner
+      return "";
+    }
     return p.goles_local > p.goles_visitante ? p.equipo_local : p.equipo_visitante;
   }
 
@@ -391,7 +405,8 @@ function MatchPanel({ equipos, partidos, loading, finalizado, finalizando, onPar
     const finished = pFiltered.filter((p) => p.estado === "finalizado");
     if (finished.length === 0) return allTeams;
     const lastRound = finished.filter((p) => p.ronda === maxRonda);
-    return lastRound.map(getWinner);
+    // Only include matches that have a determined winner
+    return lastRound.map(getWinner).filter(Boolean);
   }
 
   function getRoundLabel(ronda: number): string {
@@ -437,12 +452,29 @@ function MatchPanel({ equipos, partidos, loading, finalizado, finalizando, onPar
     const gl = parseInt(sc?.local ?? "", 10);
     const gv = parseInt(sc?.visitante ?? "", 10);
     if (isNaN(gl) || isNaN(gv)) { setSaveErrors((prev) => ({ ...prev, [p.id]: "Ingresa ambos resultados." })); return; }
-    if (gl === gv) { setSaveErrors((prev) => ({ ...prev, [p.id]: "Empate no permitido. El ganador debe ser definitivo." })); return; }
     setSavingId(p.id);
-    const { error } = await insforge.database.from("partidos_torneo").update([{ goles_local: gl, goles_visitante: gv, estado: "finalizado" }]).eq("id", p.id);
+    const { error } = await insforge.database.from("partidos_torneo").update([{ goles_local: gl, goles_visitante: gv, estado: "finalizado", penales_local: null, penales_visitante: null }]).eq("id", p.id);
     if (error) { setSaveErrors((prev) => ({ ...prev, [p.id]: "Error al guardar." })); }
     else { setScores((prev) => { const n = { ...prev }; delete n[p.id]; return n; }); onPartidoAdded(); }
     setSavingId(null);
+  }
+
+  async function handleSavePenalties(p: Partido) {
+    const sc = penaltyScores[p.id];
+    const pl = parseInt(sc?.local ?? "", 10);
+    const pv = parseInt(sc?.visitante ?? "", 10);
+    if (isNaN(pl) || isNaN(pv)) { setPenaltyErrors((prev) => ({ ...prev, [p.id]: "Ingresa ambos resultados de penales." })); return; }
+    if (pl === pv) { setPenaltyErrors((prev) => ({ ...prev, [p.id]: "Los penales tampoco pueden terminar en empate." })); return; }
+    setSavingPenaltyId(p.id);
+    const { error } = await insforge.database.from("partidos_torneo").update([{ penales_local: pl, penales_visitante: pv }]).eq("id", p.id);
+    if (error) { setPenaltyErrors((prev) => ({ ...prev, [p.id]: "Error al guardar penales." })); }
+    else {
+      setPenaltyOpen(null);
+      setPenaltyScores((prev) => { const n = { ...prev }; delete n[p.id]; return n; });
+      setPenaltyErrors((prev) => ({ ...prev, [p.id]: "" }));
+      onPartidoAdded();
+    }
+    setSavingPenaltyId(null);
   }
 
   async function handleDelete(id: string) {
@@ -524,18 +556,88 @@ function MatchPanel({ equipos, partidos, loading, finalizado, finalizando, onPar
                     }
 
                     if (p.estado === "finalizado") {
-                      const localWon = p.goles_local > p.goles_visitante;
+                      const isDraw = p.goles_local === p.goles_visitante;
+                      const hasPenalties = p.penales_local !== null && p.penales_visitante !== null;
+                      const localWon = isDraw
+                        ? (hasPenalties && p.penales_local! > p.penales_visitante!)
+                        : p.goles_local > p.goles_visitante;
+                      const penaltyPanelOpen = penaltyOpen === p.id;
                       return (
-                        <div key={p.id} className="flex items-center gap-2 px-4 py-3 hover:bg-white/2">
-                          <span className={`min-w-0 flex-1 truncate text-right text-xs font-medium ${localWon ? "text-white" : "text-white/30 line-through"}`}>{p.equipo_local}</span>
-                          <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-white/70">
-                            {p.goles_local}<span className="mx-1 text-white/25">—</span>{p.goles_visitante}
-                          </span>
-                          <span className={`min-w-0 flex-1 truncate text-left text-xs font-medium ${!localWon ? "text-white" : "text-white/30 line-through"}`}>{p.equipo_visitante}</span>
-                          <button onClick={() => handleDelete(p.id)} disabled={deletingId === p.id}
-                            className="ml-1 shrink-0 rounded-full p-1.5 text-white/20 transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:opacity-40">
-                            {deletingId === p.id ? <span className="text-xs">…</span> : <TrashIcon />}
-                          </button>
+                        <div key={p.id} className="flex flex-col divide-y divide-white/4">
+                          {/* Score row */}
+                          <div className="flex items-center gap-2 px-4 py-3 hover:bg-white/2">
+                            <span className={`min-w-0 flex-1 truncate text-right text-xs font-medium ${
+                              isDraw && !hasPenalties ? "text-white" : localWon ? "text-white" : "text-white/30 line-through"
+                            }`}>{p.equipo_local}</span>
+                            <div className="flex shrink-0 flex-col items-center">
+                              <span className="font-mono text-sm font-semibold tabular-nums text-white/70">
+                                {p.goles_local}<span className="mx-1 text-white/25">—</span>{p.goles_visitante}
+                              </span>
+                              {isDraw && hasPenalties && (
+                                <span className="text-[0.55rem] tracking-[0.15em] text-white/30">
+                                  pen. {p.penales_local} – {p.penales_visitante}
+                                </span>
+                              )}
+                              {isDraw && !hasPenalties && (
+                                <span className="text-[0.55rem] tracking-[0.15em] text-amber-400/70">empate</span>
+                              )}
+                            </div>
+                            <span className={`min-w-0 flex-1 truncate text-left text-xs font-medium ${
+                              isDraw && !hasPenalties ? "text-white" : !localWon ? "text-white" : "text-white/30 line-through"
+                            }`}>{p.equipo_visitante}</span>
+                            {/* Penalties button — only for drawn finalized matches without penalties yet */}
+                            {isDraw && !hasPenalties && (
+                              <button
+                                onClick={() => setPenaltyOpen(penaltyPanelOpen ? null : p.id)}
+                                className={`ml-1 shrink-0 rounded-full border px-2.5 py-1 text-[0.6rem] tracking-[0.12em] transition-colors ${
+                                  penaltyPanelOpen
+                                    ? "border-amber-400/50 bg-amber-400/10 text-amber-300"
+                                    : "border-amber-400/30 bg-amber-400/5 text-amber-400/70 hover:border-amber-400/60 hover:text-amber-300"
+                                }`}
+                              >
+                                PENALES
+                              </button>
+                            )}
+                            <button onClick={() => handleDelete(p.id)} disabled={deletingId === p.id}
+                              className="ml-1 shrink-0 rounded-full p-1.5 text-white/20 transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:opacity-40">
+                              {deletingId === p.id ? <span className="text-xs">…</span> : <TrashIcon />}
+                            </button>
+                          </div>
+                          {/* Inline penalty entry panel */}
+                          {penaltyPanelOpen && (
+                            <div className="flex flex-col gap-2 bg-amber-400/3 px-4 py-3">
+                              <p className="text-[0.6rem] tracking-[0.22em] text-amber-400/70 uppercase">Tanda de penales</p>
+                              <div className="flex items-center gap-2">
+                                <span className="min-w-0 flex-1 truncate text-right text-xs text-white/60">{p.equipo_local}</span>
+                                <div className="flex shrink-0 items-center gap-1.5">
+                                  <input
+                                    type="number" min="0" max="99" placeholder="0"
+                                    value={penaltyScores[p.id]?.local ?? ""}
+                                    onChange={(e) => setPenaltyScores((prev) => ({ ...prev, [p.id]: { ...prev[p.id], local: e.target.value } }))}
+                                    className="w-11 rounded-lg border border-amber-400/30 bg-amber-400/5 py-1.5 text-center text-sm font-semibold text-amber-200 outline-none focus:border-amber-400/60"
+                                  />
+                                  <span className="text-white/25">—</span>
+                                  <input
+                                    type="number" min="0" max="99" placeholder="0"
+                                    value={penaltyScores[p.id]?.visitante ?? ""}
+                                    onChange={(e) => setPenaltyScores((prev) => ({ ...prev, [p.id]: { ...prev[p.id], visitante: e.target.value } }))}
+                                    className="w-11 rounded-lg border border-amber-400/30 bg-amber-400/5 py-1.5 text-center text-sm font-semibold text-amber-200 outline-none focus:border-amber-400/60"
+                                  />
+                                </div>
+                                <span className="min-w-0 flex-1 truncate text-left text-xs text-white/60">{p.equipo_visitante}</span>
+                                <button
+                                  onClick={() => handleSavePenalties(p)}
+                                  disabled={savingPenaltyId === p.id}
+                                  className="ml-1 shrink-0 rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-1.5 text-[0.6rem] tracking-[0.12em] text-amber-300 transition-colors hover:border-amber-400/70 disabled:opacity-40"
+                                >
+                                  {savingPenaltyId === p.id ? "…" : "OK"}
+                                </button>
+                              </div>
+                              {penaltyErrors?.[p.id] && (
+                                <p className="text-center text-[0.65rem] text-red-400">{penaltyErrors[p.id]}</p>
+                              )}
+                            </div>
+                          )}
                         </div>
                       );
                     }
