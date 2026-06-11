@@ -365,6 +365,23 @@ function CardInner({
           </div>
         </>
       )}
+      {idx === 2 && (
+        <div className="mt-4 flex justify-center">
+          <a
+            href="https://jplayraces.com/event/5k-kilometros-de-vida/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/10 px-5 py-2 text-xs tracking-[0.18em] text-gold transition-colors hover:bg-gold/20 hover:border-gold/70"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+              <polyline points="15 3 21 3 21 9" />
+              <line x1="10" y1="14" x2="21" y2="3" />
+            </svg>
+            INSCRIBIRSE
+          </a>
+        </div>
+      )}
     </div>
   );
 }
