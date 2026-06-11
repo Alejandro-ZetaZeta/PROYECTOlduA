@@ -409,6 +409,12 @@ function MatchPanel({ equipos, partidos, loading, finalizado, finalizando, onPar
   const [savingPenaltyId, setSavingPenaltyId] = React.useState<string | null>(null);
   const [penaltyErrors, setPenaltyErrors] = React.useState<Record<string, string>>();
 
+  const [creationMode, setCreationMode] = React.useState<"auto" | "manual">("auto");
+  const [localTeam, setLocalTeam] = React.useState("");
+  const [visitanteTeam, setVisitanteTeam] = React.useState("");
+  const [manualError, setManualError] = React.useState("");
+  const [manualSaving, setManualSaving] = React.useState(false);
+
   const allTeams = equipos.filter((e) => e.genero === tabGenero).map((e) => e.nombre_equipo);
   const pFiltered = partidos.filter((p) => p.genero === tabGenero);
   const rondas = [...new Set(pFiltered.map((p) => p.ronda))].sort((a, b) => a - b);
@@ -424,6 +430,30 @@ function MatchPanel({ equipos, partidos, loading, finalizado, finalizando, onPar
       (p.penales_local == null || p.penales_visitante == null)
   );
   const isRoundResolved = !hasPending && !hasUnresolvedTie;
+
+  const nextTeams = getNextTeams();
+  const isChampionDetermined = isRoundResolved && nextTeams.length === 1 && maxRonda > 0;
+
+  const targetRonda = isRoundResolved ? maxRonda + 1 : maxRonda;
+  const targetRoundMatches = pFiltered.filter((p) => p.ronda === targetRonda);
+  const pairedTeams = new Set<string>();
+  targetRoundMatches.forEach((p) => {
+    pairedTeams.add(p.equipo_local);
+    if (p.equipo_visitante !== "BYE") {
+      pairedTeams.add(p.equipo_visitante);
+    }
+  });
+  const unpairedTeams = nextTeams.filter((t) => !pairedTeams.has(t));
+
+  const showAutoOption = isRoundResolved && !isChampionDetermined && allTeams.length >= 2;
+  const showManualOption = !isChampionDetermined && nextTeams.length >= 2 && unpairedTeams.length > 0;
+  const effectiveMode = isRoundResolved ? creationMode : "manual";
+
+  React.useEffect(() => {
+    setLocalTeam("");
+    setVisitanteTeam("");
+    setManualError("");
+  }, [tabGenero, unpairedTeams.length]);
 
   function getWinner(p: Partido): string {
     if (p.equipo_visitante === "BYE") return p.equipo_local;
@@ -461,9 +491,6 @@ function MatchPanel({ equipos, partidos, loading, finalizado, finalizando, onPar
     return `Ronda ${ronda}`;
   }
 
-  const nextTeams = getNextTeams();
-  const isChampionDetermined = isRoundResolved && nextTeams.length === 1 && maxRonda > 0;
-
   async function handleGenerate() {
     setGenError("");
     if (nextTeams.length < 2) { setGenError("Se necesitan al menos 2 equipos."); return; }
@@ -485,6 +512,35 @@ function MatchPanel({ equipos, partidos, loading, finalizado, finalizando, onPar
     if (error) setGenError("Error al generar partidos.");
     else { onPartidoAdded(); }
     setGenerating(false);
+  }
+
+  async function handleCreateManual(e: React.FormEvent) {
+    e.preventDefault();
+    setManualError("");
+    if (!localTeam) { setManualError("Selecciona el equipo local."); return; }
+    if (!visitanteTeam) { setManualError("Selecciona el equipo visitante (o BYE)."); return; }
+    if (localTeam === visitanteTeam) { setManualError("Un equipo no puede jugar contra sí mismo."); return; }
+
+    const isBye = visitanteTeam === "BYE";
+    setManualSaving(true);
+    const { error } = await insforge.database.from("partidos_torneo").insert([{
+      equipo_local: localTeam,
+      equipo_visitante: visitanteTeam,
+      goles_local: isBye ? 1 : 0,
+      goles_visitante: 0,
+      genero: tabGenero,
+      ronda: targetRonda,
+      estado: isBye ? "finalizado" : "pendiente"
+    }]);
+
+    if (error) {
+      setManualError("Error al crear el partido.");
+    } else {
+      setLocalTeam("");
+      setVisitanteTeam("");
+      onPartidoAdded();
+    }
+    setManualSaving(false);
   }
 
   function getScore(id: string, side: "local" | "visitante") { return scores[id]?.[side] ?? ""; }
@@ -555,8 +611,32 @@ function MatchPanel({ equipos, partidos, loading, finalizado, finalizando, onPar
         </div>
       )}
 
-      {/* Generate button */}
-      {isRoundResolved && !isChampionDetermined && (
+      {/* Option selector for Auto/Manual */}
+      {showAutoOption && (
+        <div className="flex gap-1 rounded-xl border border-white/8 bg-white/2 p-1 w-fit">
+          <button
+            type="button"
+            onClick={() => { setCreationMode("auto"); setManualError(""); }}
+            className={`rounded-lg px-4 py-1.5 text-[0.65rem] tracking-[0.18em] uppercase transition-all ${
+              creationMode === "auto" ? "bg-gold/15 text-gold border border-gold/30" : "text-white/35 hover:text-white/60"
+            }`}
+          >
+            AUTOMÁTICO
+          </button>
+          <button
+            type="button"
+            onClick={() => { setCreationMode("manual"); setManualError(""); }}
+            className={`rounded-lg px-4 py-1.5 text-[0.65rem] tracking-[0.18em] uppercase transition-all ${
+              creationMode === "manual" ? "bg-gold/15 text-gold border border-gold/30" : "text-white/35 hover:text-white/60"
+            }`}
+          >
+            MANUAL
+          </button>
+        </div>
+      )}
+
+      {/* Automatic Matchmaking UI */}
+      {isRoundResolved && !isChampionDetermined && effectiveMode === "auto" && (
         <div className="flex flex-col gap-2">
           {allTeams.length < 2 ? (
             <p className="text-xs text-white/30 italic">Necesitas al menos 2 equipos aprobados en esta categoría.</p>
@@ -568,6 +648,89 @@ function MatchPanel({ equipos, partidos, loading, finalizado, finalizando, onPar
           )}
           {genError && <p className="text-xs text-red-400">{genError}</p>}
         </div>
+      )}
+
+      {/* Manual Matchmaking UI */}
+      {showManualOption && effectiveMode === "manual" && (
+        <form onSubmit={handleCreateManual} className="rounded-2xl border border-gold/20 bg-gold/3 p-5 backdrop-blur-sm">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <p className="text-[0.65rem] tracking-[0.25em] text-gold uppercase">Emparejamiento Manual</p>
+              <p className="text-xs text-white/50 mt-1">
+                {unpairedTeams.length} {unpairedTeams.length === 1 ? "equipo restante" : "equipos restantes"} por emparejar
+              </p>
+            </div>
+            {!isRoundResolved && (
+              <span className="rounded-full bg-gold/10 border border-gold/30 px-2.5 py-0.5 text-[0.65rem] text-gold animate-pulse">
+                EN CONSTRUCCIÓN
+              </span>
+            )}
+          </div>
+
+          {/* Remaining teams list */}
+          <div className="mb-4">
+            <p className="text-[0.6rem] tracking-[0.2em] text-white/30 uppercase mb-1.5">Equipos libres</p>
+            <div className="flex flex-wrap gap-1.5">
+              {unpairedTeams.map((t) => (
+                <span key={t} className="rounded-md border border-white/5 bg-white/3 px-2 py-1 text-xs text-white/70">
+                  {t}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            {/* Local team select */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[0.65rem] tracking-[0.2em] text-white/40 uppercase">Equipo Local</label>
+              <select
+                value={localTeam}
+                onChange={(e) => {
+                  setLocalTeam(e.target.value);
+                  if (visitanteTeam === e.target.value) setVisitanteTeam("");
+                }}
+                required
+                className="w-full appearance-none rounded-xl border border-white/10 bg-[#111] px-4 py-3 text-sm text-white outline-none transition-colors focus:border-gold/50"
+              >
+                <option value="" disabled>Selecciona local</option>
+                {unpairedTeams.map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Visitante team select */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[0.65rem] tracking-[0.2em] text-white/40 uppercase">Equipo Visitante</label>
+              <select
+                value={visitanteTeam}
+                onChange={(e) => setVisitanteTeam(e.target.value)}
+                required
+                className="w-full appearance-none rounded-xl border border-white/10 bg-[#111] px-4 py-3 text-sm text-white outline-none transition-colors focus:border-gold/50"
+              >
+                <option value="" disabled>Selecciona visitante</option>
+                {unpairedTeams
+                  .filter((t) => t !== localTeam)
+                  .map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                <option value="BYE">Pase directo (BYE)</option>
+              </select>
+            </div>
+          </div>
+
+          {manualError && <p className="mt-3 text-xs text-red-400">{manualError}</p>}
+
+          <div className="mt-4 flex justify-end">
+            <button
+              type="submit"
+              disabled={manualSaving || !localTeam || !visitanteTeam}
+              className="rounded-full border border-gold/50 bg-gold/15 px-5 py-2 text-xs tracking-[0.15em] text-gold hover:border-gold/80 hover:bg-gold/25 transition-all disabled:opacity-40"
+            >
+              {manualSaving ? "GUARDANDO..." : "CREAR PARTIDO"}
+            </button>
+          </div>
+        </form>
       )}
 
       {/* Bracket rounds */}
