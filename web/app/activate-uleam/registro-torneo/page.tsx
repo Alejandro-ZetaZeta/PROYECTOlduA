@@ -1490,7 +1490,7 @@ export default function RegistroTorneoPage() {
               partidos.filter((p) => p.genero === tabGenero)
             )}
             loading={loadingData}
-            minRows={tabGenero === "masculino" ? 10 : 6}
+            minRows={tabGenero === "masculino" ? 12 : 6}
           />
           <div className="mt-3 flex gap-6">
             {[["PJ","Partidos jugados"],["PG","Ganados"],["PP","Perdidos"]].map(([a,f]) => (
