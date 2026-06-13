@@ -52,6 +52,7 @@ interface Partido {
   ronda: number;
   estado: "pendiente" | "finalizado";
   created_at: string;
+  horario?: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -171,9 +172,53 @@ function shuffleArray<T>(array: T[]): T[] {
   return arr;
 }
 
+function getGlobalRoundLabel(ronda: number, genderMatches: Partido[]): string {
+  const roundMatches = genderMatches.filter((p) => p.ronda === ronda);
+  const real = roundMatches.filter((p) => p.equipo_visitante !== "BYE");
+  const byes  = roundMatches.filter((p) => p.equipo_visitante === "BYE");
+  const teams  = real.length * 2 + byes.length;
+  if (teams === 2) return "Final";
+  if (teams === 4) return "Semifinales";
+  if (teams === 8) return "Cuartos de final";
+  return `Ronda ${ronda}`;
+}
+
+function parseHorario(horario?: string | null): number {
+  if (!horario) return Infinity;
+  const clean = horario.trim().toLowerCase();
+  
+  // Try to match HH:MM (optional AM/PM)
+  const match = clean.match(/^(\d{1,2}):(\d{2})\s*(am|pm)?$/);
+  if (!match) {
+    const numMatch = clean.match(/(\d{1,2}):(\d{2})/);
+    if (numMatch) {
+      let hrs = parseInt(numMatch[1], 10);
+      const mins = parseInt(numMatch[2], 10);
+      return hrs * 60 + mins;
+    }
+    return Infinity;
+  }
+  
+  let hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  const ampm = match[3];
+  
+  if (ampm) {
+    if (ampm === "pm" && hours < 12) {
+      hours += 12;
+    } else if (ampm === "am" && hours === 12) {
+      hours = 0;
+    }
+  }
+  
+  return hours * 60 + minutes;
+}
+
 // ---------------------------------------------------------------------------
 // Simple standings (knockout — no GD, no points)
 // ---------------------------------------------------------------------------
+
+
 
 function computeSimpleStandings(
   equipos: string[],
@@ -409,6 +454,24 @@ function MatchPanel({ equipos, partidos, loading, finalizado, finalizando, onPar
   const [savingPenaltyId, setSavingPenaltyId] = React.useState<string | null>(null);
   const [penaltyErrors, setPenaltyErrors] = React.useState<Record<string, string>>();
 
+  const [editingHorarioId, setEditingHorarioId] = React.useState<string | null>(null);
+  const [tempHorario, setTempHorario] = React.useState<Record<string, string>>({});
+  const [savingHorarioId, setSavingHorarioId] = React.useState<string | null>(null);
+
+  async function handleSaveHorario(id: string) {
+    const newVal = tempHorario[id] || "";
+    setSavingHorarioId(id);
+    const { error } = await insforge.database
+      .from("partidos_torneo")
+      .update([{ horario: newVal || null }])
+      .eq("id", id);
+    if (!error) {
+      setEditingHorarioId(null);
+      onPartidoAdded();
+    }
+    setSavingHorarioId(null);
+  }
+
   const [creationMode, setCreationMode] = React.useState<"auto" | "manual">("auto");
   const [localTeam, setLocalTeam] = React.useState("");
   const [visitanteTeam, setVisitanteTeam] = React.useState("");
@@ -416,7 +479,14 @@ function MatchPanel({ equipos, partidos, loading, finalizado, finalizando, onPar
   const [manualSaving, setManualSaving] = React.useState(false);
 
   const allTeams = equipos.filter((e) => e.genero === tabGenero).map((e) => e.nombre_equipo);
-  const pFiltered = partidos.filter((p) => p.genero === tabGenero);
+  const pFiltered = [...partidos]
+    .filter((p) => p.genero === tabGenero)
+    .sort((a, b) => {
+      const timeA = parseHorario(a.horario);
+      const timeB = parseHorario(b.horario);
+      if (timeA !== timeB) return timeA - timeB;
+      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    });
   const rondas = [...new Set(pFiltered.map((p) => p.ronda))].sort((a, b) => a - b);
   const maxRonda = rondas.length > 0 ? Math.max(...rondas) : 0;
   // Only check the current (latest) round — prior rounds are already baked into bracket advancement
@@ -482,14 +552,9 @@ function MatchPanel({ equipos, partidos, loading, finalizado, finalizando, onPar
   }
 
   function getRoundLabel(ronda: number): string {
-    const real = pFiltered.filter((p) => p.ronda === ronda && p.equipo_visitante !== "BYE");
-    const byes  = pFiltered.filter((p) => p.ronda === ronda && p.equipo_visitante === "BYE");
-    const teams  = real.length * 2 + byes.length;
-    if (teams === 2) return "Final";
-    if (teams === 4) return "Semifinales";
-    if (teams === 8) return "Cuartos de final";
-    return `Ronda ${ronda}`;
+    return getGlobalRoundLabel(ronda, pFiltered);
   }
+
 
   async function handleGenerate() {
     setGenError("");
@@ -847,35 +912,119 @@ function MatchPanel({ equipos, partidos, loading, finalizado, finalizando, onPar
                               )}
                             </div>
                           )}
+                          {/* Schedule row */}
+                          <div className="flex items-center justify-between bg-white/1 px-4 py-1.5 text-[0.65rem] text-white/40">
+                            {editingHorarioId === p.id ? (
+                              <div className="flex items-center gap-2 w-full">
+                                <input
+                                  type="text"
+                                  placeholder="Ej. 10:30 AM"
+                                  value={tempHorario[p.id] ?? p.horario ?? ""}
+                                  onChange={(e) => setTempHorario((prev) => ({ ...prev, [p.id]: e.target.value }))}
+                                  className="flex-1 rounded-md border border-white/15 bg-black px-2 py-1 text-[0.65rem] text-white outline-none focus:border-gold/50"
+                                  autoFocus
+                                />
+                                <button
+                                  onClick={() => handleSaveHorario(p.id)}
+                                  disabled={savingHorarioId === p.id}
+                                  className="text-emerald-400 hover:text-emerald-300 px-1.5 py-0.5"
+                                >
+                                  {savingHorarioId === p.id ? "..." : "Guardar"}
+                                </button>
+                                <button
+                                  onClick={() => setEditingHorarioId(null)}
+                                  className="text-white/40 hover:text-white/60 px-1.5 py-0.5"
+                                >
+                                  Cancelar
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-between w-full">
+                                <span>Horario: <strong className="text-white/70">{p.horario || "Sin definir"}</strong></span>
+                                <button
+                                  onClick={() => {
+                                    setEditingHorarioId(p.id);
+                                    setTempHorario((prev) => ({ ...prev, [p.id]: p.horario ?? "" }));
+                                  }}
+                                  className="text-gold/60 hover:text-gold transition-colors font-semibold uppercase tracking-wider text-[0.55rem]"
+                                >
+                                  Editar Horario
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       );
                     }
 
                     // Pending — score inputs
                     return (
-                      <div key={p.id} className="flex flex-col gap-2 px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <span className="min-w-0 flex-1 truncate text-right text-xs font-medium text-white">{p.equipo_local}</span>
-                          <div className="flex shrink-0 items-center gap-1.5">
-                            <input type="number" min="0" max="99" placeholder="0"
-                              value={getScore(p.id, "local")} onChange={(e) => setScore(p.id, "local", e.target.value)}
-                              className="w-11 rounded-lg border border-white/15 bg-white/6 py-1.5 text-center text-sm font-semibold text-white outline-none focus:border-gold/50" />
-                            <span className="text-white/25">—</span>
-                            <input type="number" min="0" max="99" placeholder="0"
-                              value={getScore(p.id, "visitante")} onChange={(e) => setScore(p.id, "visitante", e.target.value)}
-                              className="w-11 rounded-lg border border-white/15 bg-white/6 py-1.5 text-center text-sm font-semibold text-white outline-none focus:border-gold/50" />
+                      <div key={p.id} className="flex flex-col divide-y divide-white/4">
+                        <div className="flex flex-col gap-2 px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <span className="min-w-0 flex-1 truncate text-right text-xs font-medium text-white">{p.equipo_local}</span>
+                            <div className="flex shrink-0 items-center gap-1.5">
+                              <input type="number" min="0" max="99" placeholder="0"
+                                value={getScore(p.id, "local")} onChange={(e) => setScore(p.id, "local", e.target.value)}
+                                className="w-11 rounded-lg border border-white/15 bg-white/6 py-1.5 text-center text-sm font-semibold text-white outline-none focus:border-gold/50" />
+                              <span className="text-white/25">—</span>
+                              <input type="number" min="0" max="99" placeholder="0"
+                                value={getScore(p.id, "visitante")} onChange={(e) => setScore(p.id, "visitante", e.target.value)}
+                                className="w-11 rounded-lg border border-white/15 bg-white/6 py-1.5 text-center text-sm font-semibold text-white outline-none focus:border-gold/50" />
+                            </div>
+                            <span className="min-w-0 flex-1 truncate text-left text-xs font-medium text-white">{p.equipo_visitante}</span>
+                            <button onClick={() => handleSave(p)} disabled={savingId === p.id}
+                              className="ml-1 shrink-0 rounded-full border border-emerald-500/30 bg-emerald-500/8 px-3 py-1.5 text-[0.6rem] tracking-[0.12em] text-emerald-400 transition-colors hover:border-emerald-500/60 disabled:opacity-40">
+                              {savingId === p.id ? "…" : "OK"}
+                            </button>
+                            <button onClick={() => handleDelete(p.id)} disabled={deletingId === p.id}
+                              className="shrink-0 rounded-full p-1.5 text-white/20 transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:opacity-40">
+                              {deletingId === p.id ? <span className="text-xs">…</span> : <TrashIcon />}
+                            </button>
                           </div>
-                          <span className="min-w-0 flex-1 truncate text-left text-xs font-medium text-white">{p.equipo_visitante}</span>
-                          <button onClick={() => handleSave(p)} disabled={savingId === p.id}
-                            className="ml-1 shrink-0 rounded-full border border-emerald-500/30 bg-emerald-500/8 px-3 py-1.5 text-[0.6rem] tracking-[0.12em] text-emerald-400 transition-colors hover:border-emerald-500/60 disabled:opacity-40">
-                            {savingId === p.id ? "…" : "OK"}
-                          </button>
-                          <button onClick={() => handleDelete(p.id)} disabled={deletingId === p.id}
-                            className="shrink-0 rounded-full p-1.5 text-white/20 transition-colors hover:bg-red-500/10 hover:text-red-400 disabled:opacity-40">
-                            {deletingId === p.id ? <span className="text-xs">…</span> : <TrashIcon />}
-                          </button>
+                          {saveErrors[p.id] && <p className="text-center text-[0.65rem] text-red-400">{saveErrors[p.id]}</p>}
                         </div>
-                        {saveErrors[p.id] && <p className="text-center text-[0.65rem] text-red-400">{saveErrors[p.id]}</p>}
+                        {/* Schedule row */}
+                        <div className="flex items-center justify-between bg-white/1 px-4 py-1.5 text-[0.65rem] text-white/40">
+                          {editingHorarioId === p.id ? (
+                            <div className="flex items-center gap-2 w-full">
+                              <input
+                                type="text"
+                                placeholder="Ej. 10:30 AM"
+                                value={tempHorario[p.id] ?? p.horario ?? ""}
+                                onChange={(e) => setTempHorario((prev) => ({ ...prev, [p.id]: e.target.value }))}
+                                className="flex-1 rounded-md border border-white/15 bg-black px-2 py-1 text-[0.65rem] text-white outline-none focus:border-gold/50"
+                                autoFocus
+                              />
+                              <button
+                                onClick={() => handleSaveHorario(p.id)}
+                                disabled={savingHorarioId === p.id}
+                                className="text-emerald-400 hover:text-emerald-300 px-1.5 py-0.5"
+                              >
+                                {savingHorarioId === p.id ? "..." : "Guardar"}
+                              </button>
+                              <button
+                                onClick={() => setEditingHorarioId(null)}
+                                className="text-white/40 hover:text-white/60 px-1.5 py-0.5"
+                              >
+                                Cancelar
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-between w-full">
+                              <span>Horario: <strong className="text-white/70">{p.horario || "Sin definir"}</strong></span>
+                              <button
+                                onClick={() => {
+                                  setEditingHorarioId(p.id);
+                                  setTempHorario((prev) => ({ ...prev, [p.id]: p.horario ?? "" }));
+                                }}
+                                className="text-gold/60 hover:text-gold transition-colors font-semibold uppercase tracking-wider text-[0.55rem]"
+                              >
+                                Editar Horario
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
@@ -1383,6 +1532,104 @@ export default function RegistroTorneoPage() {
           </a>
         </div>
 
+        {/* Category selector */}
+        <div className="mt-12 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex gap-1 rounded-xl border border-white/8 bg-white/2 p-1">
+            {(["masculino", "femenino"] as const).map((g) => (
+              <button key={g} onClick={() => setTabGenero(g)}
+                className={`rounded-lg px-5 py-2 text-[0.65rem] tracking-[0.18em] uppercase transition-all ${
+                  tabGenero === g ? "bg-gold/15 text-gold border border-gold/30" : "text-white/35 hover:text-white/60"
+                }`}>
+                {g === "masculino" ? "Masculino" : "Femenino"}
+              </button>
+            ))}
+          </div>
+          <span className="rounded-full border border-gold/30 bg-gold/10 px-3 py-1 text-[0.6rem] tracking-[0.2em] text-gold">
+            {partidos.filter((p) => p.estado === "finalizado").length > 0 ? "EN CURSO" : "POR COMENZAR"}
+          </span>
+        </div>
+
+        {/* Public matches */}
+        <div className="mt-8">
+          <div className="mb-6 flex items-center gap-4">
+            <div className="h-px flex-1 bg-white/6" />
+            <p className="text-[0.65rem] tracking-[0.28em] text-white/30 uppercase">Partidos del torneo</p>
+            <div className="h-px flex-1 bg-white/6" />
+          </div>
+
+          {loadingData ? (
+            <div className="flex h-20 items-center justify-center text-xs text-white/30">Cargando partidos…</div>
+          ) : (() => {
+            const publicPartidosFiltered = [...partidos]
+              .filter((p) => p.genero === tabGenero)
+              .sort((a, b) => {
+                const timeA = parseHorario(a.horario);
+                const timeB = parseHorario(b.horario);
+                if (timeA !== timeB) return timeA - timeB;
+                return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+              });
+            const publicRondas = [...new Set(publicPartidosFiltered.map((p) => p.ronda))].sort((a, b) => a - b);
+            
+            if (publicPartidosFiltered.length === 0) {
+              return (
+                <div className="flex h-20 items-center justify-center text-xs text-white/30 italic">
+                  Partidos por comenzar.
+                </div>
+              );
+            }
+
+            return (
+              <div className="flex flex-col gap-8">
+                {publicRondas.map((ronda) => {
+                  const matches = publicPartidosFiltered.filter((p) => p.ronda === ronda);
+                  return (
+                    <div key={ronda} className="flex flex-col gap-4">
+                      <p className="text-[0.65rem] tracking-[0.25em] text-white/40 uppercase text-center font-semibold mb-2">
+                        {getGlobalRoundLabel(ronda, publicPartidosFiltered)}
+                      </p>
+                      <div className="flex flex-col gap-3">
+                        {matches.map((p) => {
+                          const isBye = p.equipo_visitante === "BYE";
+                          if (isBye) {
+                            return (
+                              <div key={p.id} className="flex items-center justify-between p-4 rounded-2xl border border-white/4 bg-white/1 text-center opacity-70">
+                                <span className="text-xs font-semibold text-white/90 truncate flex-1 text-right pr-4">{p.equipo_local}</span>
+                                <span className="text-[0.65rem] tracking-[0.12em] text-white/30 uppercase shrink-0 font-medium">Pase directo</span>
+                                <span className="flex-1 text-left pl-4"></span>
+                              </div>
+                            );
+                          }
+                          return (
+                            <div key={p.id} className="flex items-center justify-between p-4 rounded-2xl border border-white/8 bg-white/2 hover:border-gold/30 transition-all shadow-md">
+                              <span className="text-xs font-semibold text-white/90 truncate flex-1 text-right pr-4">{p.equipo_local}</span>
+                              <div className="flex flex-col items-center shrink-0 min-w-[80px]">
+                                {p.horario && (
+                                  <span className="text-[0.55rem] tracking-[0.1em] text-white/45 mb-1 bg-white/5 px-2 py-0.5 rounded">
+                                    {p.horario}
+                                  </span>
+                                )}
+                                <span className="font-mono text-sm font-bold text-gold">
+                                  {p.goles_local} — {p.goles_visitante}
+                                </span>
+                                {p.penales_local !== null && p.penales_visitante !== null && (
+                                  <span className="text-[0.55rem] tracking-[0.1em] text-amber-400 mt-0.5">
+                                    (Penales: {p.penales_local} — {p.penales_visitante})
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-xs font-semibold text-white/90 truncate flex-1 text-left pl-4">{p.equipo_visitante}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+        </div>
+
         {/* Notice banner */}
         <div className="mt-8 flex items-start gap-3 rounded-2xl border border-gold/20 bg-gold/6 px-5 py-4">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="mt-0.5 h-4 w-4 shrink-0 text-gold">
@@ -1469,21 +1716,6 @@ export default function RegistroTorneoPage() {
             <p className="text-[0.65rem] tracking-[0.28em] text-white/30 uppercase">Equipos inscritos</p>
             <div className="h-px flex-1 bg-white/6" />
           </div>
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex gap-1 rounded-xl border border-white/8 bg-white/2 p-1">
-              {(["masculino", "femenino"] as const).map((g) => (
-                <button key={g} onClick={() => setTabGenero(g)}
-                  className={`rounded-lg px-5 py-2 text-[0.65rem] tracking-[0.18em] uppercase transition-all ${
-                    tabGenero === g ? "bg-gold/15 text-gold border border-gold/30" : "text-white/35 hover:text-white/60"
-                  }`}>
-                  {g === "masculino" ? "Masculino" : "Femenino"}
-                </button>
-              ))}
-            </div>
-            <span className="rounded-full border border-gold/30 bg-gold/10 px-3 py-1 text-[0.6rem] tracking-[0.2em] text-gold">
-              {partidos.filter((p) => p.estado === "finalizado").length > 0 ? "EN CURSO" : "POR COMENZAR"}
-            </span>
-          </div>
           <SimpleStandingsTable
             rows={computeSimpleStandings(
               equipos.filter((e) => e.genero === tabGenero).map((e) => e.nombre_equipo),
@@ -1500,6 +1732,7 @@ export default function RegistroTorneoPage() {
         </div>
 
         {/* Champion display — only shown when tournament is marked finished */}
+
         {finalizado && (
           <div className="mt-16">
             <div className="mb-6 flex items-center gap-4">
