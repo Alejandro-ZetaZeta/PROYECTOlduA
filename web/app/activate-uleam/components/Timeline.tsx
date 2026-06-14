@@ -14,6 +14,9 @@ const SEMINAR_TARGET = new Date("2026-05-22T22:00:00Z");
 // June 13 2026 09:00 UTC-5
 const TOURNAMENT_TARGET = new Date("2026-06-13T14:00:00Z");
 
+// July 4 2026 08:00 UTC-5
+const RACE_TARGET = new Date("2026-07-04T12:00:00Z");
+
 function useCountdown(target: Date) {
   const calc = () => Math.max(0, Math.floor((target.getTime() - Date.now()) / 1000));
   const [secs, setSecs] = React.useState<number | null>(null);
@@ -75,6 +78,30 @@ function SeminarCountdown() {
 
 function TournamentCountdown() {
   const { days, hours, minutes, seconds, done, isReady } = useCountdown(TOURNAMENT_TARGET);
+
+  return (
+    <div className="mt-4 border-t border-white/8 pt-4">
+      {!isReady ? (
+        <div className="h-[60px]" />
+      ) : done ? (
+        <p className="text-center text-xs text-gold">El evento ya pasó.</p>
+      ) : (
+        <div className="flex flex-col items-center gap-2">
+          <p className="text-[0.6rem] tracking-[0.22em] text-muted/60 uppercase">Comienza en</p>
+          <div className="flex gap-2.5">
+            <CountdownUnit value={days} label="días" />
+            <CountdownUnit value={hours} label="horas" />
+            <CountdownUnit value={minutes} label="min" />
+            <CountdownUnit value={seconds} label="seg" />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RaceCountdown() {
+  const { days, hours, minutes, seconds, done, isReady } = useCountdown(RACE_TARGET);
 
   return (
     <div className="mt-4 border-t border-white/8 pt-4">
@@ -322,7 +349,7 @@ function CardInner({
             {stop.highlight}
           </span>
         ) : null}
-        {idx > 0 && idx !== 1 && (
+        {idx > 2 && (
           <span className="rounded-full border border-gold/30 bg-gold/20 px-3 py-0.5 text-[0.6rem] tracking-[0.18em] text-muted/80">
             PRÓXIMAMENTE
           </span>
@@ -366,21 +393,24 @@ function CardInner({
         </>
       )}
       {idx === 2 && (
-        <div className="mt-4 flex justify-center">
-          <a
-            href="https://jplayraces.com/event/5k-kilometros-de-vida/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/10 px-5 py-2 text-xs tracking-[0.18em] text-gold transition-colors hover:bg-gold/20 hover:border-gold/70"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
-              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-              <polyline points="15 3 21 3 21 9" />
-              <line x1="10" y1="14" x2="21" y2="3" />
-            </svg>
-            INSCRIBIRSE
-          </a>
-        </div>
+        <>
+          <RaceCountdown />
+          <div className="mt-4 flex justify-center">
+            <a
+              href="https://jplayraces.com/event/5k-kilometros-de-vida/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/10 px-5 py-2 text-xs tracking-[0.18em] text-gold transition-colors hover:bg-gold/20 hover:border-gold/70"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                <polyline points="15 3 21 3 21 9" />
+                <line x1="10" y1="14" x2="21" y2="3" />
+              </svg>
+              INSCRIBIRSE
+            </a>
+          </div>
+        </>
       )}
     </div>
   );
