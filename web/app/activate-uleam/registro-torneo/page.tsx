@@ -233,10 +233,21 @@ function computeSimpleStandings(
   equipos: string[],
   partidos: Partido[]
 ): { nombre: string; pj: number; pg: number; pp: number }[] {
-  const map = new Map<string, { pj: number; pg: number; pp: number }>();
-  for (const e of equipos) map.set(e, { pj: 0, pg: 0, pp: 0 });
+  const map = new Map<string, { pj: number; pg: number; pp: number; maxRonda: number }>();
+  for (const e of equipos) map.set(e, { pj: 0, pg: 0, pp: 0, maxRonda: 0 });
 
   for (const p of partidos) {
+    if (map.has(p.equipo_local)) {
+      const current = map.get(p.equipo_local)!;
+      current.maxRonda = Math.max(current.maxRonda, p.ronda);
+      map.set(p.equipo_local, current);
+    }
+    if (p.equipo_visitante !== "BYE" && map.has(p.equipo_visitante)) {
+      const current = map.get(p.equipo_visitante)!;
+      current.maxRonda = Math.max(current.maxRonda, p.ronda);
+      map.set(p.equipo_visitante, current);
+    }
+
     if (p.estado !== "finalizado" || p.equipo_visitante === "BYE") continue;
     if (!map.has(p.equipo_local) || !map.has(p.equipo_visitante)) continue;
     const local = map.get(p.equipo_local)!;
@@ -262,8 +273,15 @@ function computeSimpleStandings(
   }
 
   return [...map.entries()]
-    .map(([nombre, s]) => ({ nombre, ...s }))
-    .sort((a, b) => b.pg - a.pg || a.pp - b.pp);
+    .map(([nombre, s]) => ({
+      nombre,
+      pj: s.pj,
+      pg: s.pg,
+      pp: s.pp,
+      maxRonda: s.maxRonda,
+    }))
+    .sort((a, b) => b.pg - a.pg || a.pp - b.pp || b.maxRonda - a.maxRonda)
+    .map(({ nombre, pj, pg, pp }) => ({ nombre, pj, pg, pp }));
 }
 
 function SimpleStandingsTable({ rows, loading, minRows }: { rows: { nombre: string; pj: number; pg: number; pp: number }[]; loading: boolean; minRows: number }) {
