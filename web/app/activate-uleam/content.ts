@@ -39,13 +39,15 @@ export const activateUleam = {
         details: "En colaboración con el GAD Municipal Chone <br> Contaremos con increíbles premios. <br> Con apoyo de CAI (atención médica para participantes)",
       },
       {
-        date: "3 de julio",
+        date: "10 de julio",
         title: "Torneo de ajedrez",
+        time: "10:00 a. m.",
         details: "Nuevos espacios recreativos",
       },
       {
         date: "10 de julio",
         title: "Instalación de mesas de ajedrez y ping pong",
+        time: "5:00 p. m.",
       },
     ] satisfies RoadmapStop[],
   },
