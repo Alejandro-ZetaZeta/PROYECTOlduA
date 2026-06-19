@@ -126,7 +126,7 @@ function RaceCountdown() {
 
 const TOURNAMENT_IMG_HOR = "/RELAMPAGO_HOR.jpeg";
 const TOURNAMENT_IMG_VER = "/RELAMPAGO_VER.jpeg";
-const RACE_IMG = "/5kPROX.jpeg";
+const RACE_IMG = "/Ruta5K.jpeg";
 const SEMINAR_VIDEO_ID = "xacpk5u";
 const SEMINAR_EMBED = `https://www.dailymotion.com/embed/video/${SEMINAR_VIDEO_ID}?quality=2160`;
 
