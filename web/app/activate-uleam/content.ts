@@ -44,13 +44,12 @@ export const activateUleam = {
       },
       {
         date: "10 de julio",
-        title: "Torneo de ajedrez",
+        title: "Implementación de mesas de ajedrez y torneo de ajedrez",
         time: "10:00 a. m.",
-        details: "Nuevos espacios recreativos",
       },
       {
         date: "10 de julio",
-        title: "Instalación de mesas de ajedrez y ping pong",
+        title: "Implementación de mesas de ping pong",
         time: "5:00 p. m.",
       },
     ] satisfies RoadmapStop[],
