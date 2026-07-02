@@ -127,8 +127,7 @@ function RaceCountdown() {
 const TOURNAMENT_IMG_HOR = "/RELAMPAGO_HOR.jpeg";
 const TOURNAMENT_IMG_VER = "/RELAMPAGO_VER.jpeg";
 const RACE_IMG = "/Ruta5K.jpeg";
-const SEMINAR_VIDEO_ID = "xacpk5u";
-const SEMINAR_EMBED = `https://www.dailymotion.com/embed/video/${SEMINAR_VIDEO_ID}?quality=2160`;
+// Seminar video URL lives in content.ts (stop.videoUrl) — no Dailymotion embed.
 
 function ImageLightbox({
   open,
@@ -203,82 +202,46 @@ function ImageLightbox({
   );
 }
 
-function VideoModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  React.useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [open, onClose]);
 
+function SeminarVideoPanel({ videoUrl, videoThumbnail }: { videoUrl: string; videoThumbnail?: string }) {
   return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.22 }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8"
-          style={{ backdropFilter: "blur(20px)", background: "rgba(0,0,0,0.75)" }}
-          onClick={onClose}
-        >
-          <motion.div
-            initial={{ scale: 0.88, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.88, opacity: 0 }}
-            transition={{ duration: 0.3, ease: easeOutQuint }}
-            className="relative w-full max-w-3xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="relative w-full overflow-hidden rounded-2xl shadow-2xl" style={{ paddingBottom: "56.25%" }}>
-              <iframe
-                src={SEMINAR_EMBED}
-                title="Seminario de defensa personal"
-                allow="autoplay; fullscreen"
-                referrerPolicy="strict-origin-when-cross-origin"
-                className="absolute inset-0 h-full w-full border-0"
-              />
-            </div>
-            <button
-              onClick={onClose}
-              className="absolute -right-3 -top-3 flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-black/80 text-white/80 transition-colors hover:text-white"
-              aria-label="Cerrar"
-            >
-              ✕
-            </button>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-}
-
-function SeminarVideoPanel({ onClick }: { onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      aria-label="Reproducir video del seminario"
+    <a
+      href={videoUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="Ver video del seminario en Instagram"
       className="group relative hidden h-full w-full min-h-[220px] cursor-pointer overflow-hidden rounded-2xl md:block"
     >
-      {/* Thumbnail */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={`https://www.dailymotion.com/thumbnail/video/${SEMINAR_VIDEO_ID}`}
-        alt="Seminario de defensa personal"
-        className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-      />
-      {/* Scrim */}
+      {videoThumbnail ? (
+        <Image
+          src={videoThumbnail}
+          alt="Vista previa del seminario de defensa personal"
+          fill
+          loading="eager"
+          className="object-cover transition-transform duration-500 group-hover:scale-105"
+          sizes="(max-width: 1280px) 40vw, 30vw"
+        />
+      ) : (
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse at center, rgba(196,163,90,0.18) 0%, rgba(0,0,0,0.85) 70%)",
+          }}
+        />
+      )}
       <div className="absolute inset-0 bg-black/35 transition-opacity duration-300 group-hover:bg-black/50" />
-      {/* Play button */}
-      <div className="absolute inset-0 flex items-center justify-center">
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
         <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-white/70 bg-black/50 shadow-xl transition-all duration-300 group-hover:scale-110 group-hover:border-white group-hover:bg-black/70">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="ml-1 h-7 w-7 text-white">
             <polygon points="5,3 19,12 5,21" />
           </svg>
         </div>
+        <span className="rounded-full border border-white/15 bg-black/40 px-3 py-1 text-[0.6rem] tracking-[0.22em] text-white/80 uppercase backdrop-blur-sm">
+          Ver en Instagram
+        </span>
       </div>
-    </button>
+    </a>
   );
 }
 
@@ -333,14 +296,26 @@ function CardInner({
 }) {
   return (
     <div className="relative rounded-2xl border border-card-border bg-card p-5 backdrop-blur-sm sm:max-w-[520px]">
-      {(idx === 0 || idx === 1 || idx === 2) && (
-        <button
-          onClick={onEyeClick}
-          aria-label={idx === 0 ? "Ver video del seminario" : idx === 1 ? "Ver imagen del torneo" : "Ver imagen de la carrera"}
-          className="absolute right-3 top-3 flex items-center justify-center rounded-full border border-white/15 bg-white/5 p-1.5 text-muted/80 transition-colors hover:border-gold/30 hover:text-gold md:hidden"
-        >
-          <EyeIcon />
-        </button>
+      {(idx === 1 || idx === 2 || (idx === 0 && stop.videoUrl)) && (
+        idx === 0 && stop.videoUrl ? (
+          <a
+            href={stop.videoUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Ver video del seminario en Instagram"
+            className="absolute right-3 top-3 flex items-center justify-center rounded-full border border-white/15 bg-white/5 p-1.5 text-muted/80 transition-colors hover:border-gold/30 hover:text-gold md:hidden"
+          >
+            <EyeIcon />
+          </a>
+        ) : (
+          <button
+            onClick={onEyeClick}
+            aria-label={idx === 0 ? "Ver video del seminario" : idx === 1 ? "Ver imagen del torneo" : "Ver imagen de la carrera"}
+            className="absolute right-3 top-3 flex items-center justify-center rounded-full border border-white/15 bg-white/5 p-1.5 text-muted/80 transition-colors hover:border-gold/30 hover:text-gold md:hidden"
+          >
+            <EyeIcon />
+          </button>
+        )
       )}
       <div className={`flex flex-wrap items-center gap-x-3 gap-y-2 ${(idx === 0 || idx === 1 || idx === 2) ? "pr-10 md:pr-0" : ""}`}>
         <p className="text-[0.65rem] tracking-[0.28em] text-gold">{stop.date.toUpperCase()}</p>
@@ -427,7 +402,6 @@ function EyeIcon() {
 
 export function Timeline({ stops }: { stops: RoadmapStop[] }) {
   const ref = React.useRef<HTMLDivElement>(null);
-  const [lightboxOpen, setLightboxOpen] = React.useState(false);
   const [tournamentLightboxOpen, setTournamentLightboxOpen] = React.useState(false);
   const [raceLightboxOpen, setRaceLightboxOpen] = React.useState(false);
 
@@ -454,7 +428,6 @@ export function Timeline({ stops }: { stops: RoadmapStop[] }) {
 
   return (
     <>
-    <VideoModal open={lightboxOpen} onClose={() => setLightboxOpen(false)} />
     <ImageLightbox
       open={tournamentLightboxOpen}
       onClose={() => setTournamentLightboxOpen(false)}
@@ -510,10 +483,10 @@ export function Timeline({ stops }: { stops: RoadmapStop[] }) {
               {idx === 0 && (
                 <div className={`hidden md:flex items-stretch gap-0 ${isLeft ? "flex-row" : "flex-row-reverse"}`}>
                   <div className={`${wrapperClass} flex flex-col`}>
-                    <CardInner stop={stop} idx={idx} onEyeClick={() => setLightboxOpen(true)} />
+                    <CardInner stop={stop} idx={idx} onEyeClick={() => {}} />
                   </div>
                   <div className={`${imageSlotClass} flex items-center justify-center`}>
-                    <SeminarVideoPanel onClick={() => setLightboxOpen(true)} />
+                    {stop.videoUrl && <SeminarVideoPanel videoUrl={stop.videoUrl} videoThumbnail={stop.videoThumbnail} />}
                   </div>
                 </div>
               )}
@@ -546,7 +519,7 @@ export function Timeline({ stops }: { stops: RoadmapStop[] }) {
                   idx={idx}
                   onEyeClick={
                     idx === 0
-                      ? () => setLightboxOpen(true)
+                      ? () => {}
                       : idx === 1
                       ? () => setTournamentLightboxOpen(true)
                       : () => setRaceLightboxOpen(true)

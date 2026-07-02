@@ -5,6 +5,8 @@ export type RoadmapStop = {
   time?: string;
   highlight?: string;
   details?: string;
+  videoUrl?: string;
+  videoThumbnail?: string;
 };
 
 export const activateUleam = {
@@ -25,6 +27,8 @@ export const activateUleam = {
         time: "5:00 – 6:00 p. m.",
         location: "En la Explanada del Bloque C",
         details: "Es totalmente gratis, te esperamos!",
+        videoUrl: "https://www.instagram.com/reel/DZIMSpkOCB-/?utm_source=ig_web_copy_link&igsh=MzRlODBiNWFlZA==",
+        videoThumbnail: "/THUMbSeminar.png",
       },
       {
         date: "13 de junio",
