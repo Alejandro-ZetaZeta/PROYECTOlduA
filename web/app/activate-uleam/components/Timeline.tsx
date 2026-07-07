@@ -14,8 +14,14 @@ const SEMINAR_TARGET = new Date("2026-05-22T22:00:00Z");
 // June 13 2026 09:00 UTC-5
 const TOURNAMENT_TARGET = new Date("2026-06-13T14:00:00Z");
 
-// July 4 2026 08:00 UTC-5
+// July 4 2026 07:00 UTC-5
 const RACE_TARGET = new Date("2026-07-04T12:00:00Z");
+
+// July 10 2026 10:00 UTC-5 — Ajedrez
+const CHESS_TARGET = new Date("2026-07-10T15:00:00Z");
+
+// July 10 2026 17:00 UTC-5 — Ping pong
+const PINGPONG_TARGET = new Date("2026-07-10T22:00:00Z");
 
 function useCountdown(target: Date) {
   const calc = () => Math.max(0, Math.floor((target.getTime() - Date.now()) / 1000));
@@ -102,6 +108,54 @@ function TournamentCountdown() {
 
 function RaceCountdown() {
   const { days, hours, minutes, seconds, done, isReady } = useCountdown(RACE_TARGET);
+
+  return (
+    <div className="mt-4 border-t border-white/8 pt-4">
+      {!isReady ? (
+        <div className="h-[60px]" />
+      ) : done ? (
+        <p className="text-center text-xs text-gold">El evento ya pasó.</p>
+      ) : (
+        <div className="flex flex-col items-center gap-2">
+          <p className="text-[0.6rem] tracking-[0.22em] text-muted/60 uppercase">Comienza en</p>
+          <div className="flex gap-2.5">
+            <CountdownUnit value={days} label="días" />
+            <CountdownUnit value={hours} label="horas" />
+            <CountdownUnit value={minutes} label="min" />
+            <CountdownUnit value={seconds} label="seg" />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ChessCountdown() {
+  const { days, hours, minutes, seconds, done, isReady } = useCountdown(CHESS_TARGET);
+
+  return (
+    <div className="mt-4 border-t border-white/8 pt-4">
+      {!isReady ? (
+        <div className="h-[60px]" />
+      ) : done ? (
+        <p className="text-center text-xs text-gold">El evento ya pasó.</p>
+      ) : (
+        <div className="flex flex-col items-center gap-2">
+          <p className="text-[0.6rem] tracking-[0.22em] text-muted/60 uppercase">Comienza en</p>
+          <div className="flex gap-2.5">
+            <CountdownUnit value={days} label="días" />
+            <CountdownUnit value={hours} label="horas" />
+            <CountdownUnit value={minutes} label="min" />
+            <CountdownUnit value={seconds} label="seg" />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PingPongCountdown() {
+  const { days, hours, minutes, seconds, done, isReady } = useCountdown(PINGPONG_TARGET);
 
   return (
     <div className="mt-4 border-t border-white/8 pt-4">
@@ -324,7 +378,7 @@ function CardInner({
             {stop.highlight}
           </span>
         ) : null}
-        {idx > 2 && (
+        {idx > 4 && (
           <span className="rounded-full border border-gold/30 bg-gold/20 px-3 py-0.5 text-[0.6rem] tracking-[0.18em] text-muted/80">
             PRÓXIMAMENTE
           </span>
@@ -382,11 +436,13 @@ function CardInner({
                 <polyline points="15 3 21 3 21 9" />
                 <line x1="10" y1="14" x2="21" y2="3" />
               </svg>
-              INSCRIBIRSE
+              VER RESULTADOS
             </a>
           </div>
         </>
       )}
+      {idx === 3 && <ChessCountdown />}
+      {idx === 4 && <PingPongCountdown />}
     </div>
   );
 }
