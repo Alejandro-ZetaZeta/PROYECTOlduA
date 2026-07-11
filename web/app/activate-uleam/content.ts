@@ -42,7 +42,7 @@ export const activateUleam = {
         time: "7:00 a. m.",
         details: "En colaboración con el GAD Municipal Chone <br> Contaremos con increíbles premios. <br> Con apoyo de CAI (atención médica para participantes)",
         videoUrl: "https://www.tiktok.com/@dannesmolinaphotos/photo/7658796206289669396?_r=1&image_index=1",
-        videoThumbnail: "/THUMBRace5k.png",
+        videoThumbnail: "/THUMBRace5K.png",
       },
       {
         date: "16 de julio",
