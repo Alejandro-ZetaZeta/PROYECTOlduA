@@ -17,11 +17,11 @@ const TOURNAMENT_TARGET = new Date("2026-06-13T14:00:00Z");
 // July 4 2026 07:00 UTC-5
 const RACE_TARGET = new Date("2026-07-04T12:00:00Z");
 
-// July 10 2026 10:00 UTC-5 — Ajedrez
-const CHESS_TARGET = new Date("2026-07-10T15:00:00Z");
+// July 16 2026 10:00 UTC-5 — Ajedrez
+const CHESS_TARGET = new Date("2026-07-16T15:00:00Z");
 
-// July 10 2026 17:00 UTC-5 — Ping pong
-const PINGPONG_TARGET = new Date("2026-07-10T22:00:00Z");
+// July 16 2026 17:00 UTC-5 — Ping pong
+const PINGPONG_TARGET = new Date("2026-07-16T22:00:00Z");
 
 function useCountdown(target: Date) {
   const calc = () => Math.max(0, Math.floor((target.getTime() - Date.now()) / 1000));
@@ -66,7 +66,7 @@ function SeminarCountdown() {
       {!isReady ? (
         <div className="h-[60px]" /> /* Skeleton / space placeholder */
       ) : done ? (
-        <p className="text-center text-xs text-gold">El evento ya pasó.</p>
+        null
       ) : (
         <div className="flex flex-col items-center gap-2">
           <p className="text-[0.6rem] tracking-[0.22em] text-muted/60 uppercase">Comienza en</p>
@@ -90,7 +90,7 @@ function TournamentCountdown() {
       {!isReady ? (
         <div className="h-[60px]" />
       ) : done ? (
-        <p className="text-center text-xs text-gold">El evento ya pasó.</p>
+        null
       ) : (
         <div className="flex flex-col items-center gap-2">
           <p className="text-[0.6rem] tracking-[0.22em] text-muted/60 uppercase">Comienza en</p>
@@ -114,7 +114,7 @@ function RaceCountdown() {
       {!isReady ? (
         <div className="h-[60px]" />
       ) : done ? (
-        <p className="text-center text-xs text-gold">El evento ya pasó.</p>
+        null
       ) : (
         <div className="flex flex-col items-center gap-2">
           <p className="text-[0.6rem] tracking-[0.22em] text-muted/60 uppercase">Comienza en</p>
@@ -138,7 +138,7 @@ function ChessCountdown() {
       {!isReady ? (
         <div className="h-[60px]" />
       ) : done ? (
-        <p className="text-center text-xs text-gold">El evento ya pasó.</p>
+        null
       ) : (
         <div className="flex flex-col items-center gap-2">
           <p className="text-[0.6rem] tracking-[0.22em] text-muted/60 uppercase">Comienza en</p>
@@ -162,7 +162,7 @@ function PingPongCountdown() {
       {!isReady ? (
         <div className="h-[60px]" />
       ) : done ? (
-        <p className="text-center text-xs text-gold">El evento ya pasó.</p>
+        null
       ) : (
         <div className="flex flex-col items-center gap-2">
           <p className="text-[0.6rem] tracking-[0.22em] text-muted/60 uppercase">Comienza en</p>
@@ -180,8 +180,8 @@ function PingPongCountdown() {
 
 const TOURNAMENT_IMG_HOR = "/RELAMPAGO_HOR.jpeg";
 const TOURNAMENT_IMG_VER = "/RELAMPAGO_VER.jpeg";
-const RACE_IMG = "/Ruta5K.jpeg";
-// Seminar video URL lives in content.ts (stop.videoUrl) — no Dailymotion embed.
+// Race and seminar video URLs live in content.ts (stop.videoUrl) — no static image embed.
+
 
 function ImageLightbox({
   open,
@@ -319,23 +319,46 @@ function TournamentImagePanel({ onClick }: { onClick: () => void }) {
   );
 }
 
-function RaceImagePanel({ onClick }: { onClick: () => void }) {
+function RaceTikTokPanel({ videoUrl, videoThumbnail }: { videoUrl: string; videoThumbnail?: string }) {
   return (
-    <button
-      onClick={onClick}
-      aria-label="Ver imagen de la carrera"
-      className="group relative hidden h-full w-full cursor-zoom-in overflow-hidden rounded-2xl md:block"
+    <a
+      href={videoUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="Ver fotos de la carrera LDU 5K en TikTok"
+      className="group relative hidden h-full w-full min-h-[220px] cursor-pointer overflow-hidden rounded-2xl md:block"
     >
-      <Image
-        src={RACE_IMG}
-        alt="Gran carrera LDU 5K"
-        fill
-        loading="eager"
-        className="object-contain transition-transform duration-500 group-hover:scale-105"
-        sizes="(max-width: 1280px) 40vw, 30vw"
-      />
-      <div className="absolute inset-0 bg-black/20 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-    </button>
+      {videoThumbnail ? (
+        <Image
+          src={videoThumbnail}
+          alt="Vista previa de la carrera LDU 5K"
+          fill
+          loading="eager"
+          className="object-cover transition-transform duration-500 group-hover:scale-105"
+          sizes="(max-width: 1280px) 40vw, 30vw"
+        />
+      ) : (
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse at center, rgba(196,163,90,0.18) 0%, rgba(0,0,0,0.85) 70%)",
+          }}
+        />
+      )}
+      <div className="absolute inset-0 bg-black/35 transition-opacity duration-300 group-hover:bg-black/50" />
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+        {/* TikTok logo icon */}
+        <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-white/70 bg-black/50 shadow-xl transition-all duration-300 group-hover:scale-110 group-hover:border-white group-hover:bg-black/70">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-8 w-8 text-white">
+            <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.29 6.29 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.76a4.85 4.85 0 0 1-1.01-.07z" />
+          </svg>
+        </div>
+        <span className="rounded-full border border-white/15 bg-black/40 px-3 py-1 text-[0.6rem] tracking-[0.22em] text-white/80 uppercase backdrop-blur-sm">
+          Ver en TikTok
+        </span>
+      </div>
+    </a>
   );
 }
 
@@ -350,13 +373,13 @@ function CardInner({
 }) {
   return (
     <div className="relative rounded-2xl border border-card-border bg-card p-5 backdrop-blur-sm sm:max-w-[520px]">
-      {(idx === 1 || idx === 2 || (idx === 0 && stop.videoUrl)) && (
-        idx === 0 && stop.videoUrl ? (
+      {(idx === 1 || (idx === 0 && stop.videoUrl) || (idx === 2 && stop.videoUrl)) && (
+        (idx === 0 || idx === 2) && stop.videoUrl ? (
           <a
             href={stop.videoUrl}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label="Ver video del seminario en Instagram"
+            aria-label={idx === 0 ? "Ver video del seminario en Instagram" : "Ver fotos de la carrera en TikTok"}
             className="absolute right-3 top-3 flex items-center justify-center rounded-full border border-white/15 bg-white/5 p-1.5 text-muted/80 transition-colors hover:border-gold/30 hover:text-gold md:hidden"
           >
             <EyeIcon />
@@ -364,7 +387,7 @@ function CardInner({
         ) : (
           <button
             onClick={onEyeClick}
-            aria-label={idx === 0 ? "Ver video del seminario" : idx === 1 ? "Ver imagen del torneo" : "Ver imagen de la carrera"}
+            aria-label={idx === 1 ? "Ver imagen del torneo" : ""}
             className="absolute right-3 top-3 flex items-center justify-center rounded-full border border-white/15 bg-white/5 p-1.5 text-muted/80 transition-colors hover:border-gold/30 hover:text-gold md:hidden"
           >
             <EyeIcon />
@@ -441,6 +464,14 @@ function CardInner({
           </div>
         </>
       )}
+      {(idx === 3 || idx === 4) && (
+        <div className="mt-4 flex items-center gap-2 rounded-xl border border-gold/20 bg-gold/5 px-4 py-3">
+          <p className="text-[0.7rem] leading-snug tracking-wide text-muted/80">
+            La fecha de este evento aún está por confirmar.{" "}
+            <span className="text-gold/90 font-medium">Estén atentos. 👀</span>
+          </p>
+        </div>
+      )}
       {idx === 3 && <ChessCountdown />}
       {idx === 4 && <PingPongCountdown />}
     </div>
@@ -459,7 +490,6 @@ function EyeIcon() {
 export function Timeline({ stops }: { stops: RoadmapStop[] }) {
   const ref = React.useRef<HTMLDivElement>(null);
   const [tournamentLightboxOpen, setTournamentLightboxOpen] = React.useState(false);
-  const [raceLightboxOpen, setRaceLightboxOpen] = React.useState(false);
 
   // useScroll() with no target tracks window scroll — no container check, no warning.
   // We compute the fill range from the element's measured document position instead.
@@ -491,13 +521,7 @@ export function Timeline({ stops }: { stops: RoadmapStop[] }) {
       srcVer={TOURNAMENT_IMG_VER}
       alt="Torneo relámpago de fútbol"
     />
-    <ImageLightbox
-      open={raceLightboxOpen}
-      onClose={() => setRaceLightboxOpen(false)}
-      srcHor={RACE_IMG}
-      srcVer={RACE_IMG}
-      alt="Gran carrera LDU 5K"
-    />
+
     <div ref={ref} className="relative mt-14 pl-10 sm:pl-0">
       {/* Track */}
       <div className="absolute left-3 top-0 h-full w-0.5 bg-white/8 sm:left-1/2 sm:-translate-x-1/2" />
@@ -560,10 +584,10 @@ export function Timeline({ stops }: { stops: RoadmapStop[] }) {
               {idx === 2 && (
                 <div className={`hidden md:flex items-stretch gap-0 ${isLeft ? "flex-row" : "flex-row-reverse"}`}>
                   <div className={`${wrapperClass} flex flex-col`}>
-                    <CardInner stop={stop} idx={idx} onEyeClick={() => setRaceLightboxOpen(true)} />
+                    <CardInner stop={stop} idx={idx} onEyeClick={() => {}} />
                   </div>
                   <div className={`${imageSlotClass} flex items-center justify-center`}>
-                    <RaceImagePanel onClick={() => setRaceLightboxOpen(true)} />
+                    {stop.videoUrl && <RaceTikTokPanel videoUrl={stop.videoUrl} videoThumbnail={stop.videoThumbnail} />}
                   </div>
                 </div>
               )}
@@ -574,11 +598,9 @@ export function Timeline({ stops }: { stops: RoadmapStop[] }) {
                   stop={stop}
                   idx={idx}
                   onEyeClick={
-                    idx === 0
-                      ? () => {}
-                      : idx === 1
+                    idx === 1
                       ? () => setTournamentLightboxOpen(true)
-                      : () => setRaceLightboxOpen(true)
+                      : () => {}
                   }
                 />
               </div>

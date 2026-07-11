@@ -41,14 +41,16 @@ export const activateUleam = {
         title: "Gran carrera LDU 5K",
         time: "7:00 a. m.",
         details: "En colaboración con el GAD Municipal Chone <br> Contaremos con increíbles premios. <br> Con apoyo de CAI (atención médica para participantes)",
+        videoUrl: "https://www.tiktok.com/@dannesmolinaphotos/photo/7658796206289669396?_r=1&image_index=1",
+        videoThumbnail: "/THUMBRace5K.png",
       },
       {
-        date: "10 de julio",
+        date: "16 de julio",
         title: "Implementación de mesas de ajedrez y torneo de ajedrez",
         time: "10:00 a. m.",
       },
       {
-        date: "10 de julio",
+        date: "16 de julio",
         title: "Implementación de mesas de ping pong",
         time: "5:00 p. m.",
       },
