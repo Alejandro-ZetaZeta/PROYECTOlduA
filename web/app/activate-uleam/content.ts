@@ -42,7 +42,7 @@ export const activateUleam = {
         time: "7:00 a. m.",
         details: "En colaboración con el GAD Municipal Chone <br> Contaremos con increíbles premios. <br> Con apoyo de CAI (atención médica para participantes)",
         videoUrl: "https://www.tiktok.com/@dannesmolinaphotos/photo/7658796206289669396?_r=1&image_index=1",
-        videoThumbnail: "/THUMBRace5K.png",
+        videoThumbnail: "/THUMBRace5k.png",
       },
       {
         date: "16 de julio",
@@ -72,7 +72,7 @@ export const activateUleam = {
       {
         number: "0967483401",
         message:
-          "Hola Nathali, me gustaria saber mas de los eventos que organiza la LDU-A Chone",
+          "Hola Nathaly, me gustaria saber mas de los eventos que organiza la LDU-A Chone",
       },
     ],
     social: "Síguenos en nuestras redes sociales (Facebook, Instagram, TikTok).",

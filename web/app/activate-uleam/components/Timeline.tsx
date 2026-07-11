@@ -286,9 +286,12 @@ function SeminarVideoPanel({ videoUrl, videoThumbnail }: { videoUrl: string; vid
       )}
       <div className="absolute inset-0 bg-black/35 transition-opacity duration-300 group-hover:bg-black/50" />
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+        {/* Instagram logo icon */}
         <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-white/70 bg-black/50 shadow-xl transition-all duration-300 group-hover:scale-110 group-hover:border-white group-hover:bg-black/70">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="ml-1 h-7 w-7 text-white">
-            <polygon points="5,3 19,12 5,21" />
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="h-7 w-7 text-white">
+            <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+            <circle cx="12" cy="12" r="4" />
+            <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" stroke="none" />
           </svg>
         </div>
         <span className="rounded-full border border-white/15 bg-black/40 px-3 py-1 text-[0.6rem] tracking-[0.22em] text-white/80 uppercase backdrop-blur-sm">
@@ -427,6 +430,28 @@ function CardInner({
         </div>
       )}
       {idx === 0 && <SeminarCountdown />}
+      {idx === 0 && stop.videoUrl && (
+        <a
+          href={stop.videoUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3 transition-colors hover:border-gold/30 hover:bg-gold/5 md:hidden"
+        >
+          <div className="flex items-center gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 shrink-0 text-gold/70">
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+              <circle cx="12" cy="12" r="4" />
+              <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" stroke="none" />
+            </svg>
+            <span className="text-[0.72rem] leading-snug text-muted/80">
+              ¿Te lo perdiste? <span className="text-gold/90 font-medium">Mira el video del seminario</span>
+            </span>
+          </div>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 shrink-0 text-muted/50">
+            <path d="M9 18l6-6-6-6" />
+          </svg>
+        </a>
+      )}
       {idx === 1 && (
         <>
           <TournamentCountdown />
@@ -462,6 +487,26 @@ function CardInner({
               VER RESULTADOS
             </a>
           </div>
+          {stop.videoUrl && (
+            <a
+              href={stop.videoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3 transition-colors hover:border-gold/30 hover:bg-gold/5 md:hidden"
+            >
+              <div className="flex items-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4 shrink-0 text-gold/70">
+                  <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.29 6.29 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.76a4.85 4.85 0 0 1-1.01-.07z" />
+                </svg>
+                <span className="text-[0.72rem] leading-snug text-muted/80">
+                  ¡Revive la carrera! <span className="text-gold/90 font-medium">Ver fotos en TikTok</span>
+                </span>
+              </div>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 shrink-0 text-muted/50">
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </a>
+          )}
         </>
       )}
       {(idx === 3 || idx === 4) && (
