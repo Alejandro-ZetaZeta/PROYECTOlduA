@@ -57,13 +57,13 @@ export function Hero({ hero }: Props) {
         </Reveal>
 
         <Reveal delay={0.07}>
-          <h1 className="mt-7 text-balance text-center font-kunaroh text-5xl leading-[0.94] tracking-[0.04em] text-foreground sm:text-7xl lg:text-[7rem] xl:text-[8rem]">
+          <h1 className="mt-7 w-full text-center font-kunaroh text-5xl leading-[0.94] tracking-[0.04em] text-foreground sm:text-7xl lg:text-[7rem] xl:text-[8rem]">
             {hero.title}
           </h1>
         </Reveal>
 
         <Reveal delay={0.14}>
-          <p className="mx-auto mt-5 max-w-xl text-pretty text-center text-sm leading-[1.8] text-muted sm:mt-7 sm:text-base lg:mx-0 lg:text-left lg:text-lg">
+          <p className="mx-auto mt-5 max-w-xl text-pretty text-center text-sm leading-[1.8] text-muted sm:mt-7 sm:text-base lg:text-lg">
             {hero.subtitle2}
           </p>
         </Reveal>
