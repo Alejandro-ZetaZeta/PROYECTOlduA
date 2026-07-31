@@ -1,0 +1,67 @@
+---
+import "../styles/global.css";
+import { ClientRouter } from "astro:transitions";
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = "Eventos deportivos e integración estudiantil organizados por LDU-A ULEAM (Extensión Chone)." } = Astro.props;
+
+// Preconnect to the InsForge API so the admin/registration round-trip doesn't
+// pay the DNS+TLS cost on first request. (The middleware pings it on every
+// server-rendered page; client islands hit it directly on /registro-torneo.)
+const INSFORGE_URL = import.meta.env.PUBLIC_INSFORGE_URL;
+const insforgeOrigin = (() => {
+  try {
+    return new URL(INSFORGE_URL).origin;
+  } catch {
+    return undefined;
+  }
+})();
+---
+
+<!doctype html>
+<html lang="es" class="h-full antialiased">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="theme-color" content="#05060b" />
+    <meta name="color-scheme" content="dark" />
+
+    {/* Critical resource hints — run before the parser hits the body. */}
+    {/* Preload the LCP display font so the Hero title paints on the first frame. */}
+    <link
+      rel="preload"
+      href="/Kunaroh.ttf"
+      as="font"
+      type="font/ttf"
+      crossorigin="anonymous"
+    />
+    {/* Preload the LCP image (the leftmost institution logo) so it doesn't
+        wait behind the CSS. fetchpriority=high is the modern equivalent of
+        a manual <link rel="preload"> for LCP candidates. */}
+    <link
+      rel="preload"
+      as="image"
+      href="/LOGO-ULEAM.svg"
+      fetchpriority="high"
+    />
+    {insforgeOrigin && (
+      <>
+        <link rel="preconnect" href={insforgeOrigin} crossorigin />
+        <link rel="dns-prefetch" href={insforgeOrigin} />
+      </>
+    )}
+
+    <link rel="icon" type="image/png" href="/icon.png?icon.0zbxbt_8_e007.png" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <ClientRouter />
+  </head>
+  <body class="relative min-h-full flex flex-col overflow-x-hidden">
+    <slot />
+  </body>
+</html>

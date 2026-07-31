@@ -1,0 +1,133 @@
+---
+// Roadmap section header + Timeline island. Replaces app/activate-uleam/sections/Roadmap.tsx.
+import Reveal from "./Reveal";
+import TimelineIsland from "./TimelineIsland";
+import { getImage } from "astro:assets";
+
+import relampagoHor from "../assets/relampago-hor.jpg";
+import relampagoVer from "../assets/relampago-ver.jpg";
+import thumbSeminar from "../assets/thumb-seminar.png";
+import thumbRace5k from "../assets/thumb-race-5k.png";
+
+interface RoadmapStop {
+  date: string;
+  title: string;
+  location?: string;
+  time?: string;
+  highlight?: string;
+  details?: string;
+  videoUrl?: string;
+  videoThumbnail?: string;
+}
+
+interface Props {
+  roadmap: {
+    kicker: string;
+    title: string;
+    stops: RoadmapStop[];
+  };
+}
+
+const { roadmap } = Astro.props;
+
+// Optimize the timeline raster assets at build time:
+//   - WebP for modern browsers, JPEG/PNG fallback via <picture>.
+//   - Explicit intrinsic dimensions to keep CLS at zero.
+//   - `loading="lazy"` + `decoding="async"` by default; TimelineIsland still
+//     upgrades idx 0/1/2 to eager so they don't lag the first paint.
+const tournamentHorRaw = await getImage({
+  src: relampagoHor,
+  format: "webp",
+  quality: 78,
+  width: 960,
+});
+const tournamentVerRaw = await getImage({
+  src: relampagoVer,
+  format: "webp",
+  quality: 78,
+  width: 480,
+});
+const seminarThumbRaw = await getImage({
+  src: thumbSeminar,
+  format: "webp",
+  quality: 72,
+  width: 960,
+});
+const raceThumbRaw = await getImage({
+  src: thumbRace5k,
+  format: "webp",
+  quality: 72,
+  width: 960,
+});
+
+// Fallback raster URLs (no transformation) for browsers that ignore <picture>.
+const tournamentHorJpgRaw = await getImage({
+  src: relampagoHor,
+  format: "jpeg",
+  quality: 82,
+  width: 960,
+});
+const tournamentVerJpgRaw = await getImage({
+  src: relampagoVer,
+  format: "jpeg",
+  quality: 82,
+  width: 480,
+});
+const seminarThumbPngRaw = await getImage({
+  src: thumbSeminar,
+  format: "png",
+  width: 960,
+});
+const raceThumbPngRaw = await getImage({
+  src: thumbRace5k,
+  format: "png",
+  width: 960,
+});
+
+// Reshape to the flat OptimizedImage contract TimelineIsland expects.
+const toOpt = (r: typeof tournamentHorRaw) => ({
+  src: r.src,
+  width: r.attributes.width as number,
+  height: r.attributes.height as number,
+});
+
+const tournamentHor = toOpt(tournamentHorRaw);
+const tournamentVer = toOpt(tournamentVerRaw);
+const seminarThumb = toOpt(seminarThumbRaw);
+const raceThumb = toOpt(raceThumbRaw);
+const tournamentHorJpg = toOpt(tournamentHorJpgRaw);
+const tournamentVerJpg = toOpt(tournamentVerJpgRaw);
+const seminarThumbPng = toOpt(seminarThumbPngRaw);
+const raceThumbPng = toOpt(raceThumbPngRaw);
+---
+
+<section class="relative mx-auto w-full max-w-6xl px-6 py-16 sm:px-10 sm:py-24">
+  <Reveal client:visible>
+    <p class="text-xs tracking-[0.32em] text-gold">{roadmap.kicker.toUpperCase()}</p>
+  </Reveal>
+
+  <Reveal client:visible delay={0.06}>
+    <h2 class="mt-5 font-display text-3xl tracking-tight text-foreground sm:text-4xl">
+      {roadmap.title}
+    </h2>
+  </Reveal>
+
+  <Reveal client:visible delay={0.12}>
+    <p class="mt-4 max-w-2xl text-pretty text-sm leading-[1.8] text-muted sm:text-base">
+      Una secuencia cronológica de actividades para activar el campus y fortalecer nuestra comunidad.
+    </p>
+  </Reveal>
+
+  <TimelineIsland
+    client:visible
+    stops={roadmap.stops}
+    tournamentHor={tournamentHor}
+    tournamentHorFallback={tournamentHorJpg}
+    tournamentVer={tournamentVer}
+    tournamentVerFallback={tournamentVerJpg}
+    seminarThumb={seminarThumb}
+    seminarThumbFallback={seminarThumbPng}
+    raceThumb={raceThumb}
+    raceThumbFallback={raceThumbPng}
+  />
+</section>

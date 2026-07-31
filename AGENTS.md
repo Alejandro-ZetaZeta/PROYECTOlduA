@@ -1,10 +1,11 @@
 # Repo Notes For Agents
 
-The Next.js app lives in `web/`.
+The Astro app lives in `web/` (migrated from Next.js AppRouter; see
+`web/SPECS.md` for the current architecture).
 
 Primary agent docs:
-- `web/AGENTS.md`
-- `web/SPECS.md`
+- `web/AGENTS.md` — editing rules, auth model, Windows dev-server pattern
+- `web/SPECS.md` — product + architecture + known SDK workarounds
 
 <!-- INSFORGE:START -->
 ## InsForge backend

@@ -1,0 +1,64 @@
+---
+// CTA — server-rendered, no JS. Replaces app/activate-uleam/sections/CTA.tsx.
+import Reveal from "./Reveal";
+
+interface Props {
+  cta: {
+    title: string;
+    pillars: string[];
+  };
+}
+
+const { cta } = Astro.props;
+---
+
+<section class="mx-auto w-full max-w-6xl px-6 pb-16 sm:px-10 sm:pb-24">
+  <div
+    class="relative overflow-hidden rounded-2xl border p-5 backdrop-blur-sm sm:rounded-3xl sm:p-14"
+    style={{
+      borderColor: "rgba(196,163,90,0.22)",
+      background:
+        "linear-gradient(135deg, rgba(196,163,90,0.06) 0%, rgba(255,255,255,0.03) 60%, rgba(196,163,90,0.04) 100%)",
+    }}
+  >
+    {/* Subtle inner glow */}
+    <div
+      class="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full blur-3xl"
+      style={{ background: "rgba(196,163,90,0.08)" }}
+    >
+    </div>
+    <div
+      class="pointer-events-none absolute -bottom-24 -right-24 h-72 w-72 rounded-full blur-3xl"
+      style={{ background: "rgba(196,163,90,0.06)" }}
+    >
+    </div>
+
+    <div class="relative">
+      <Reveal client:visible>
+        <div class="flex items-center gap-3">
+          <div class="h-px w-8" style={{ background: "rgba(196,163,90,0.55)" }}></div>
+          <p class="text-[0.65rem] tracking-[0.34em] text-gold">CIERRE</p>
+        </div>
+      </Reveal>
+
+      <Reveal client:visible delay={0.06}>
+        <h2 class="mt-6 text-balance text-center font-display text-3xl tracking-tight text-foreground sm:text-4xl">
+          {cta.title}
+        </h2>
+      </Reveal>
+
+      <Reveal client:visible delay={0.12}>
+        <div class="mt-8 flex flex-wrap justify-center gap-3">
+          {cta.pillars.map((p) => (
+            <span
+              class="rounded-full border px-5 py-2 text-sm tracking-wide text-foreground/85"
+              style={{ borderColor: "rgba(196,163,90,0.28)" }}
+            >
+              {p}
+            </span>
+          ))}
+        </div>
+      </Reveal>
+    </div>
+  </div>
+</section>

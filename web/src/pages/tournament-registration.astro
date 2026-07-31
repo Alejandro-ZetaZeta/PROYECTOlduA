@@ -1,0 +1,8 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import RegistrationClient from "../components/RegistrationClient";
+---
+
+<BaseLayout title="Tournament Registration · LDU-A" description="Sign up for the LDU-A ULEAM football tournament.">
+  <RegistrationClient client:only="react" />
+</BaseLayout>

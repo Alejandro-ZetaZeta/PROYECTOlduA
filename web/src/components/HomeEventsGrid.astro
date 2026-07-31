@@ -1,0 +1,71 @@
+---
+interface EventEntry {
+  id: string;
+  data: {
+    hero: { title: string; subtitle2: string };
+    roadmap: { stops: { date: string }[] };
+  };
+}
+
+interface Props {
+  events: EventEntry[];
+}
+
+const { events } = Astro.props;
+
+const formatDateRange = (stops: { date: string }[]) => {
+  if (stops.length === 0) return "";
+  const first = stops[0].date;
+  const last = stops[stops.length - 1].date;
+  return first === last ? first : `${first} – ${last}`;
+};
+---
+
+<main class="relative mx-auto w-full max-w-5xl px-6 py-20 sm:px-10 sm:py-28">
+  <header class="text-center">
+    <p class="text-[0.6rem] tracking-[0.32em] text-gold sm:text-xs">LDU-A ULEAM · CHONE</p>
+    <h1 class="mt-6 font-display text-4xl tracking-tight text-foreground sm:text-5xl">
+      Eventos
+    </h1>
+    <p class="mx-auto mt-5 max-w-xl text-pretty text-sm leading-[1.8] text-muted sm:text-base">
+      Deporte e integración estudiantil organizados por la Liga Deportiva Universitaria Amateur,
+      Extensión Chone.
+    </p>
+  </header>
+
+  <ul class="mt-14 grid gap-6 sm:grid-cols-2">
+    {
+      events.map((e) => (
+        <li>
+          <a
+            href={`/events/${e.id}`}
+            class="group block overflow-hidden rounded-2xl border border-card-border bg-card p-6 backdrop-blur-sm transition-colors hover:border-gold/30"
+          >
+            <p class="text-[0.6rem] tracking-[0.28em] text-gold uppercase">
+              {formatDateRange(e.data.roadmap.stops)}
+            </p>
+            <h2 class="mt-3 font-display text-2xl tracking-tight text-foreground sm:text-3xl">
+              {e.data.hero.title}
+            </h2>
+            <p class="mt-3 text-sm leading-[1.7] text-muted">{e.data.hero.subtitle2}</p>
+            <span class="mt-5 inline-flex items-center gap-1.5 text-[0.65rem] tracking-[0.18em] text-gold/70 group-hover:text-gold uppercase">
+              Ver evento
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="h-3 w-3"
+              >
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </span>
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</main>

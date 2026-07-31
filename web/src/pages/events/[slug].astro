@@ -1,0 +1,27 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Hero from "../../components/Hero.astro";
+import Roadmap from "../../components/Roadmap.astro";
+import CTA from "../../components/CTA.astro";
+import EventFooter from "../../components/EventFooter.astro";
+
+export const prerender = true;
+
+export async function getStaticPaths() {
+  const events = await getCollection("events");
+  return events.map((e) => ({ params: { slug: e.id }, props: { event: e } }));
+}
+
+const { event } = Astro.props;
+const data = event.data;
+---
+
+<BaseLayout title={`${data.hero.title} | LDU-A`} description={data.hero.subtitle2}>
+  <div class="relative flex flex-1 flex-col overflow-x-hidden">
+    <Hero hero={data.hero} />
+    <Roadmap roadmap={data.roadmap} />
+    <CTA cta={data.cta} />
+    <EventFooter footer={data.footer} />
+  </div>
+</BaseLayout>

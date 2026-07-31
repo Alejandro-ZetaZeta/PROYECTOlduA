@@ -1,0 +1,47 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Hero from "../components/Hero.astro";
+import Roadmap from "../components/Roadmap.astro";
+import CTA from "../components/CTA.astro";
+import EventFooter from "../components/EventFooter.astro";
+import HomeEventsGrid from "../components/HomeEventsGrid.astro";
+
+// All event data is static JSON; prerender the home page so the edge can
+// serve it without invoking a server function. The routeRules entry in
+// astro.config.mjs also declares this, but being explicit here keeps
+// `astro check` happy and makes the intent obvious to readers.
+export const prerender = true;
+
+const events = await getCollection("events");
+
+// Single-event fast path: render the only event's landing directly at `/`
+// (mirrors the original Next.js behavior where `/` was the activate-uleam page).
+// Multi-event case falls back to a cards grid.
+const single = events.length === 1 ? events[0] : null;
+const data = single?.data;
+---
+
+{
+  single && data && (
+    <BaseLayout
+      title={`${data.hero.title} | LDU-A`}
+      description={data.hero.subtitle2}
+    >
+      <div class="relative flex flex-1 flex-col overflow-x-hidden">
+        <Hero hero={data.hero} />
+        <Roadmap roadmap={data.roadmap} />
+        <CTA cta={data.cta} />
+        <EventFooter footer={data.footer} />
+      </div>
+    </BaseLayout>
+  )
+}
+
+{
+  !single && (
+    <BaseLayout title="LDU-A ULEAM | Eventos">
+      <HomeEventsGrid events={events} />
+    </BaseLayout>
+  )
+}
