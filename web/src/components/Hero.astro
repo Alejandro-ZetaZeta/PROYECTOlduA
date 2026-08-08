@@ -16,6 +16,12 @@ interface Props {
 const { hero } = Astro.props;
 ---
 
+{/* LCP preloads — scoped to pages that render this hero, so /registro-torneo
+    and /404 don't ship wasted preload hints. The body-positioned <link>
+    tags are still honored by the browser parser. */}
+<link rel="preload" href="/Kunaroh.ttf" as="font" type="font/ttf" crossorigin="anonymous" />
+<link rel="preload" as="image" href="/LOGO-ULEAM.svg" fetchpriority="high" />
+
 <section class="relative pb-20 pt-20 sm:pb-28 sm:pt-24 lg:pb-36 lg:pt-28">
   <div class="mx-auto w-full max-w-6xl px-6 sm:px-10">
 

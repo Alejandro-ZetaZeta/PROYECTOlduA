@@ -13,6 +13,7 @@ const { title, description = "Eventos deportivos e integración estudiantil orga
 // pay the DNS+TLS cost on first request. (The middleware pings it on every
 // server-rendered page; client islands hit it directly on /registro-torneo.)
 const INSFORGE_URL = import.meta.env.PUBLIC_INSFORGE_URL;
+const INSFORGE_ANON_KEY = import.meta.env.PUBLIC_INSFORGE_ANON_KEY;
 const insforgeOrigin = (() => {
   try {
     return new URL(INSFORGE_URL).origin;
@@ -31,24 +32,10 @@ const insforgeOrigin = (() => {
     <meta name="theme-color" content="#05060b" />
     <meta name="color-scheme" content="dark" />
 
-    {/* Critical resource hints — run before the parser hits the body. */}
-    {/* Preload the LCP display font so the Hero title paints on the first frame. */}
-    <link
-      rel="preload"
-      href="/Kunaroh.ttf"
-      as="font"
-      type="font/ttf"
-      crossorigin="anonymous"
-    />
-    {/* Preload the LCP image (the leftmost institution logo) so it doesn't
-        wait behind the CSS. fetchpriority=high is the modern equivalent of
-        a manual <link rel="preload"> for LCP candidates. */}
-    <link
-      rel="preload"
-      as="image"
-      href="/LOGO-ULEAM.svg"
-      fetchpriority="high"
-    />
+    {/* Site-wide resource hints. The LCP image + display font preloads live
+        in <Hero />, not here — /registro-torneo and /404 don't render the
+        hero, so preloading those assets there triggers a browser warning
+        ("preloaded but not used within a few seconds"). */}
     {insforgeOrigin && (
       <>
         <link rel="preconnect" href={insforgeOrigin} crossorigin />
@@ -59,6 +46,20 @@ const insforgeOrigin = (() => {
     <link rel="icon" type="image/png" href="/icon.png?icon.0zbxbt_8_e007.png" />
     <title>{title}</title>
     <meta name="description" content={description} />
+
+    {/* Server-injected InsForge config. The InsForge SDK hard-codes
+        `NEXT_PUBLIC_INSFORGE_*` (Next.js convention) in its env-var fallback,
+        and Astro only inlines `import.meta.env.PUBLIC_*` at BUILD time — so
+        if the var is missing at build, the browser bundle ships with
+        `undefined` and createBrowserClient() throws. Setting it on
+        `window` at request time side-steps both problems. */}
+    {INSFORGE_URL && INSFORGE_ANON_KEY && (
+      <script
+        is:inline
+        set:html={`window.__INSFORGE_CONFIG__={baseUrl:${JSON.stringify(INSFORGE_URL)},anonKey:${JSON.stringify(INSFORGE_ANON_KEY)}};`}
+      />
+    )}
+
     <ClientRouter />
   </head>
   <body class="relative min-h-full flex flex-col overflow-x-hidden">

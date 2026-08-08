@@ -1,9 +1,33 @@
 import { createBrowserClient } from '@insforge/sdk/ssr';
 
-const BASE_URL = import.meta.env.PUBLIC_INSFORGE_URL;
-const ANON_KEY = import.meta.env.PUBLIC_INSFORGE_ANON_KEY;
-
 const REFRESH_PATH = '/api/auth/refresh';
+
+/**
+ * InsForge config resolution. We try, in order:
+ *  1. `window.__INSFORGE_CONFIG__` — server-injected by BaseLayout at request
+ *     time, so it works regardless of whether `PUBLIC_INSFORGE_*` was set
+ *     when the client bundle was built.
+ *  2. `import.meta.env.PUBLIC_INSFORGE_URL` / `_ANON_KEY` — the Astro-native
+ *     way, inlined at build time. Useful for local dev and edge cases where
+ *     BaseLayout didn't run (e.g. Storybook, tests).
+ *
+ * The SDK's own env-var fallback (`NEXT_PUBLIC_INSFORGE_*`) is a Next.js
+ * convention and never fires in the browser, so we don't rely on it.
+ */
+function resolveConfig(): { baseUrl: string; anonKey: string } | null {
+  const fromWindow =
+    typeof window !== 'undefined'
+      ? (window as unknown as { __INSFORGE_CONFIG__?: { baseUrl?: string; anonKey?: string } })
+          .__INSFORGE_CONFIG__
+      : undefined;
+  if (fromWindow?.baseUrl && fromWindow?.anonKey) {
+    return { baseUrl: fromWindow.baseUrl, anonKey: fromWindow.anonKey };
+  }
+  const baseUrl = import.meta.env.PUBLIC_INSFORGE_URL;
+  const anonKey = import.meta.env.PUBLIC_INSFORGE_ANON_KEY;
+  if (baseUrl && anonKey) return { baseUrl, anonKey };
+  return null;
+}
 
 /**
  * SDK bug workaround: `createBrowserClient`'s internal `ssrFetch` calls
@@ -33,6 +57,15 @@ const fetchWithRefreshRewrite: typeof globalThis.fetch = (input, init) => {
   return baseFetch(input as RequestInfo, init);
 };
 
+const config = resolveConfig();
+if (!config) {
+  // Defer the throw to first SDK use so a misconfigured build doesn't take
+  // down unrelated pages (Hero, CTA, etc.) on /registro-torneo.
+  console.warn(
+    '[insforge/browser] Missing config — set PUBLIC_INSFORGE_URL and PUBLIC_INSFORGE_ANON_KEY in the deployment environment.',
+  );
+}
+
 /**
  * Browser-side InsForge client.
  *
@@ -45,8 +78,8 @@ const fetchWithRefreshRewrite: typeof globalThis.fetch = (input, init) => {
  * server endpoints under `/api/auth/*`.
  */
 export const insforge = createBrowserClient({
-  baseUrl: BASE_URL,
-  anonKey: ANON_KEY,
+  baseUrl: config?.baseUrl ?? '',
+  anonKey: config?.anonKey ?? '',
   refreshUrl: REFRESH_PATH,
   fetch: fetchWithRefreshRewrite,
 });
