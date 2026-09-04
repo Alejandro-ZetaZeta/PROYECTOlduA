@@ -78,6 +78,22 @@ function RefreshIcon({ spinning }: { spinning: boolean }) {
   );
 }
 
+function ChevronLeft() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+      <path d="m15 18-6-6 6-6" />
+    </svg>
+  );
+}
+
+function ChevronRight() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+      <path d="m9 18 6-6-6-6" />
+    </svg>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Login modal (same users/flows as the tournament admin panel)
 // ---------------------------------------------------------------------------
@@ -247,6 +263,12 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
     await fetchRows(id);
   }
 
+  function moveDiscipline(dir: 1 | -1) {
+    const idx = DISCIPLINAS.findIndex((d) => d.id === tab);
+    const nextIdx = (idx + dir + DISCIPLINAS.length) % DISCIPLINAS.length;
+    switchTab(DISCIPLINAS[nextIdx].id);
+  }
+
   async function handleLogout() {
     // Server clears the auth cookies. The browser SDK caches the session in
     // memory and exposes no way to clear it (auth surface is read-only), so a
@@ -305,7 +327,8 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
                 CERRAR SESIÓN
               </button>
             </div>
-            <div className="shrink-0 overflow-x-auto border-b border-white/8 px-4 py-3 sm:px-6">
+            {/* Desktop: full segmented control */}
+            <div className="hidden overflow-x-auto border-b border-white/8 px-4 py-3 sm:block sm:px-6">
               <div className="flex w-full gap-1 rounded-2xl border border-white/10 bg-white/3 p-1">
                 {DISCIPLINAS.map((d) => (
                   <button key={d.id} onClick={() => switchTab(d.id)}
@@ -319,6 +342,22 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* Mobile: compact segmented control with prev/next arrows */}
+            <div className="flex items-center gap-2 border-b border-white/8 px-4 py-3 sm:hidden">
+              <button onClick={() => moveDiscipline(-1)} aria-label="Disciplina anterior"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/3 text-white/50 transition-colors hover:border-gold/40 hover:text-gold">
+                <ChevronLeft />
+              </button>
+              <div className="flex flex-1 items-center justify-between gap-2 rounded-xl border border-gold/30 bg-gold/10 px-4 py-2.5">
+                <span className="text-[0.72rem] tracking-[0.15em] text-gold uppercase">{cfg.label}</span>
+                <span className="text-[0.65rem] text-white/40">{counts[tab]} inscripciones</span>
+              </div>
+              <button onClick={() => moveDiscipline(1)} aria-label="Disciplina siguiente"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/3 text-white/50 transition-colors hover:border-gold/40 hover:text-gold">
+                <ChevronRight />
+              </button>
             </div>
           </div>
 

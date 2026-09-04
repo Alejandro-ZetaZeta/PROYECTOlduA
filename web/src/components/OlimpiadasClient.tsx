@@ -525,23 +525,21 @@ export default function OlimpiadasClient() {
           </p>
         </div>
 
-        {/* Discipline selector — segmented control, scrollable on mobile */}
-        <div className="mt-10 overflow-x-auto">
-          <div className="mx-auto flex w-full gap-1 rounded-2xl border border-white/10 bg-white/3 p-1">
-            {DISCIPLINAS.map((d) => (
-              <button
-                key={d.id}
-                onClick={() => switchDisciplina(d.id)}
-                className={`flex min-w-max flex-1 items-center justify-center whitespace-nowrap rounded-xl px-4 py-2 text-[0.68rem] tracking-[0.16em] uppercase transition-all ${
-                  disciplina === d.id
-                    ? "border border-gold/50 bg-gold/15 text-gold"
-                    : "border border-transparent text-white/40 hover:text-white/70"
-                }`}
-              >
-                {d.label}
-              </button>
-            ))}
-          </div>
+        {/* Discipline selector */}
+        <div className="mt-10 flex flex-wrap justify-center gap-2">
+          {DISCIPLINAS.map((d) => (
+            <button
+              key={d.id}
+              onClick={() => switchDisciplina(d.id)}
+              className={`rounded-full border px-4 py-2 text-[0.68rem] tracking-[0.16em] uppercase transition-all ${
+                disciplina === d.id
+                  ? "border-gold/50 bg-gold/15 text-gold"
+                  : "border-white/10 bg-white/3 text-white/40 hover:border-white/25 hover:text-white/70"
+              }`}
+            >
+              {d.label}
+            </button>
+          ))}
         </div>
 
         {/* Active discipline panel */}
