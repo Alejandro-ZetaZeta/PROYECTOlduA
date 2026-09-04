@@ -9,6 +9,17 @@ interface Props {
 
 const { title, description = "Eventos deportivos e integración estudiantil organizados por LDU-A ULEAM (Extensión Chone)." } = Astro.props;
 
+// Absolute origin (needed for OG images — WhatsApp/discord require an absolute
+// URL, not a relative path). Falls back gracefully if Astro.request is missing.
+const origin = (() => {
+  try {
+    return new URL(Astro.request.url).origin;
+  } catch {
+    return undefined;
+  }
+})();
+const ogImage = origin ? `${origin}/icon.png` : undefined;
+
 // Preconnect to the InsForge API so the admin/registration round-trip doesn't
 // pay the DNS+TLS cost on first request. (The middleware pings it on every
 // server-rendered page; client islands hit it directly on /registro-torneo.)
@@ -46,6 +57,23 @@ const insforgeOrigin = (() => {
     <link rel="icon" type="image/png" href="/icon.png?icon.0zbxbt_8_e007.png" />
     <title>{title}</title>
     <meta name="description" content={description} />
+
+    {/* Open Graph / social share. og:image uses the absolute origin so link
+        previews render when the URL is shared (WhatsApp, etc.). */}
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    {ogImage && (
+      <>
+        <meta property="og:image" content={ogImage} />
+        <meta property="og:image:width" content="717" />
+        <meta property="og:image:height" content="717" />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content={title} />
+        <meta name="twitter:description" content={description} />
+        <meta name="twitter:image" content={ogImage} />
+      </>
+    )}
 
     {/* Server-injected InsForge config. The InsForge SDK hard-codes
         `NEXT_PUBLIC_INSFORGE_*` (Next.js convention) in its env-var fallback,
