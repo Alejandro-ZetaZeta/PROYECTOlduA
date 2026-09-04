@@ -40,6 +40,7 @@ export default defineConfig({
     '/404': { maxAge: 3600, swr: 86400 },
     '/registro-torneo': { maxAge: 30, swr: 60 },
     '/tournament-registration': { maxAge: 30, swr: 60 },
+    '/olimpiadas-2026': { maxAge: 30, swr: 60 },
     '/api/**': { maxAge: 0, swr: 0 },
   },
   redirects: {

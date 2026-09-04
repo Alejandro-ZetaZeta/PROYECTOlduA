@@ -17,9 +17,13 @@ const events = defineCollection({
         z.object({
           date: z.string(),
           title: z.string(),
+          period: z.string().optional(),
+          historical: z.boolean().optional(),
           location: z.string().optional(),
           time: z.string().optional(),
           highlight: z.string().optional(),
+          tags: z.array(z.string()).optional(),
+          route: z.string().optional(),
           details: z.string().optional(),
           videoUrl: z.string().optional(),
           videoThumbnail: z.string().optional(),

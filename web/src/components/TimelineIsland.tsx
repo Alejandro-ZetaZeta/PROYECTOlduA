@@ -8,9 +8,13 @@ import { easeOutQuint } from "@/lib/animations";
 interface RoadmapStop {
   date: string;
   title: string;
+  period?: string;
+  historical?: boolean;
   location?: string;
   time?: string;
   highlight?: string;
+  tags?: string[];
+  route?: string;
   details?: string;
   videoUrl?: string;
   videoThumbnail?: string;
@@ -34,12 +38,6 @@ const TOURNAMENT_TARGET = new Date("2026-06-13T14:00:00Z");
 
 // July 4 2026 07:00 UTC-5
 const RACE_TARGET = new Date("2026-07-04T12:00:00Z");
-
-// July 16 2026 10:00 UTC-5 — Ajedrez
-const CHESS_TARGET = new Date("2026-07-16T15:00:00Z");
-
-// July 16 2026 17:00 UTC-5 — Ping pong
-const PINGPONG_TARGET = new Date("2026-07-16T22:00:00Z");
 
 function useCountdown(target: Date) {
   const calc = () => Math.max(0, Math.floor((target.getTime() - Date.now()) / 1000));
@@ -122,50 +120,6 @@ function TournamentCountdown() {
 
 function RaceCountdown() {
   const { days, hours, minutes, seconds, done, isReady } = useCountdown(RACE_TARGET);
-
-  return (
-    <div className="mt-4 border-t border-white/8 pt-4">
-      {!isReady ? (
-        <div className="h-[60px]" />
-      ) : done ? null : (
-        <div className="flex flex-col items-center gap-2">
-          <p className="text-[0.6rem] tracking-[0.22em] text-muted/60 uppercase">Comienza en</p>
-          <div className="flex gap-2.5">
-            <CountdownUnit value={days} label="días" />
-            <CountdownUnit value={hours} label="horas" />
-            <CountdownUnit value={minutes} label="min" />
-            <CountdownUnit value={seconds} label="seg" />
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ChessCountdown() {
-  const { days, hours, minutes, seconds, done, isReady } = useCountdown(CHESS_TARGET);
-
-  return (
-    <div className="mt-4 border-t border-white/8 pt-4">
-      {!isReady ? (
-        <div className="h-[60px]" />
-      ) : done ? null : (
-        <div className="flex flex-col items-center gap-2">
-          <p className="text-[0.6rem] tracking-[0.22em] text-muted/60 uppercase">Comienza en</p>
-          <div className="flex gap-2.5">
-            <CountdownUnit value={days} label="días" />
-            <CountdownUnit value={hours} label="horas" />
-            <CountdownUnit value={minutes} label="min" />
-            <CountdownUnit value={seconds} label="seg" />
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function PingPongCountdown() {
-  const { days, hours, minutes, seconds, done, isReady } = useCountdown(PINGPONG_TARGET);
 
   return (
     <div className="mt-4 border-t border-white/8 pt-4">
@@ -496,6 +450,14 @@ function CardInner({
             {stop.highlight}
           </span>
         ) : null}
+        {stop.tags?.map((tag) => (
+          <span
+            key={tag}
+            className="rounded-full border border-gold/25 bg-gold/5 px-3 py-0.5 text-[0.6rem] tracking-[0.18em] text-gold/80"
+          >
+            {tag}
+          </span>
+        ))}
         {idx > 4 && (
           <span className="rounded-full border border-gold/30 bg-gold/20 px-3 py-0.5 text-[0.6rem] tracking-[0.18em] text-muted/80">
             PRÓXIMAMENTE
@@ -589,6 +551,28 @@ function CardInner({
           </div>
         </>
       )}
+      {stop.route && idx !== 1 && (
+        <div className="mt-4 flex justify-center">
+          <a
+            href={stop.route}
+            className="inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/10 px-5 py-2 text-xs tracking-[0.18em] text-gold transition-colors hover:bg-gold/20 hover:border-gold/70"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.8}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-3.5 w-3.5"
+            >
+              <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z" />
+            </svg>
+            VER DISCIPLINAS
+          </a>
+        </div>
+      )}
       {idx === 2 && (
         <>
           <RaceCountdown />
@@ -653,16 +637,6 @@ function CardInner({
           )}
         </>
       )}
-      {(idx === 3 || idx === 4) && (
-        <div className="mt-4 flex items-center gap-2 rounded-xl border border-gold/20 bg-gold/5 px-4 py-3">
-          <p className="text-[0.7rem] leading-snug tracking-wide text-muted/80">
-            La fecha de este evento aún está por confirmar.{" "}
-            <span className="text-gold/90 font-medium">Estén atentos. 👀</span>
-          </p>
-        </div>
-      )}
-      {idx === 3 && <ChessCountdown />}
-      {idx === 4 && <PingPongCountdown />}
     </div>
   );
 }
@@ -682,6 +656,215 @@ function EyeIcon() {
       <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
       <circle cx="12" cy="12" r="3" />
     </svg>
+  );
+}
+
+type MediaImages = {
+  tournamentHor: OptimizedImage;
+  tournamentHorFallback: OptimizedImage;
+  tournamentVer: OptimizedImage;
+  tournamentVerFallback: OptimizedImage;
+  seminarThumb: OptimizedImage;
+  seminarThumbFallback: OptimizedImage;
+  raceThumb: OptimizedImage;
+  raceThumbFallback: OptimizedImage;
+};
+
+type IndexedStop = { stop: RoadmapStop; idx: number };
+
+function PeriodSection({
+  label,
+  open,
+  onToggle,
+  items,
+  media,
+  onOpenTournament,
+}: {
+  label: string;
+  open: boolean;
+  onToggle: () => void;
+  items: IndexedStop[];
+  media: MediaImages;
+  onOpenTournament: () => void;
+}) {
+  const ref = React.useRef<HTMLDivElement>(null);
+  const { scrollY } = useScroll();
+  const [range, setRange] = React.useState<[number, number]>([0, 1]);
+
+  const hasItems = items.length > 0;
+
+  React.useEffect(() => {
+    if (!open || !hasItems) return;
+    const update = () => {
+      const el = ref.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const top = rect.top + window.scrollY;
+      const vh = window.innerHeight;
+      setRange([top - vh * 0.85, top + rect.height - vh * 0.25]);
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, [open, hasItems]);
+
+  const lineScale = useTransform(scrollY, range, [0, 1], { clamp: true });
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="group flex w-full items-center justify-center gap-4 border-b border-white/10 pb-4 text-center"
+      >
+        <span
+          className={`grid h-7 w-7 shrink-0 place-items-center rounded-full border transition-colors ${
+            open
+              ? "border-gold/40 bg-gold/10 text-gold"
+              : "border-white/15 bg-white/5 text-muted group-hover:border-gold/30 group-hover:text-gold"
+          }`}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={`h-3.5 w-3.5 transition-transform duration-300 ${open ? "rotate-180" : ""}`}
+          >
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </span>
+        <span className="font-display text-xl tracking-tight text-foreground sm:text-2xl">
+          Periodo {label}
+        </span>
+        {!hasItems && (
+          <span className="ml-auto text-xs tracking-[0.2em] text-muted/50 uppercase">
+            Sin actividades
+          </span>
+        )}
+      </button>
+
+      {open && hasItems && (
+        <div ref={ref} className="relative mt-10 pl-10 sm:pl-0">
+          {/* Track */}
+          <div className="absolute left-3 top-0 h-full w-0.5 bg-white/8 sm:left-1/2 sm:-translate-x-1/2" />
+          {/* Fill — gradient bright at bottom so the leading tip glows */}
+          <motion.div
+            className="absolute left-3 top-0 h-full w-0.5 origin-top sm:left-1/2 sm:-translate-x-1/2"
+            style={{
+              scaleY: lineScale,
+              background:
+                "linear-gradient(to bottom, rgba(196,163,90,0.3) 0%, #c4a35a 70%, #f0d485 100%)",
+              boxShadow: "0 0 8px 2px rgba(196,163,90,0.6)",
+            }}
+          />
+
+          <div className="flex flex-col gap-6 sm:gap-9">
+            {items.map(({ stop, idx }) => {
+              const isLeft = idx % 2 === 0;
+              const wrapperClass = isLeft
+                ? "sm:w-[calc(50%-1rem)] sm:pr-10"
+                : "sm:w-[calc(50%-1rem)] sm:pl-10 sm:ml-auto";
+
+              const motionClass =
+                idx === 0 || idx === 1 || idx === 2
+                  ? "relative w-full"
+                  : `relative w-full ${wrapperClass}`;
+
+              const imageSlotClass = isLeft
+                ? "sm:w-[calc(50%-1rem)] sm:pl-10 sm:ml-auto"
+                : "sm:w-[calc(50%-1rem)] sm:pr-10";
+
+              return (
+                <motion.div
+                  key={`${stop.date}-${stop.title}`}
+                  initial={{ opacity: 0, y: 18 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: false, margin: "0px 0px -8% 0px" }}
+                  transition={{ duration: 0.58, ease: easeOutQuint }}
+                  className={motionClass}
+                >
+                  {/* Desktop: card in its half + image in the opposite half */}
+                  {idx === 0 && (
+                    <div
+                      className={`hidden md:flex items-stretch gap-0 ${isLeft ? "flex-row" : "flex-row-reverse"}`}
+                    >
+                      <div className={`${wrapperClass} flex flex-col`}>
+                        <CardInner stop={stop} idx={idx} onEyeClick={() => {}} />
+                      </div>
+                      <div className={`${imageSlotClass} flex items-center justify-center`}>
+                        {stop.videoUrl && (
+                          <SeminarVideoPanel
+                            videoUrl={stop.videoUrl}
+                            videoThumbnail={media.seminarThumb.src}
+                            videoThumbnailFallback={media.seminarThumbFallback.src}
+                            width={media.seminarThumb.width}
+                            height={media.seminarThumb.height}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {idx === 1 && (
+                    <div className="hidden md:flex flex-row items-stretch gap-0">
+                      <div className={`${imageSlotClass} flex items-center justify-center`}>
+                        <TournamentImagePanel
+                          onClick={onOpenTournament}
+                          srcHor={media.tournamentHor.src}
+                          srcHorFallback={media.tournamentHorFallback.src}
+                          width={media.tournamentHor.width}
+                          height={media.tournamentHor.height}
+                        />
+                      </div>
+                      <div className={`${wrapperClass} flex flex-col`}>
+                        <CardInner
+                          stop={stop}
+                          idx={idx}
+                          onEyeClick={onOpenTournament}
+                        />
+                      </div>
+                    </div>
+                  )}
+                  {idx === 2 && (
+                    <div
+                      className={`hidden md:flex items-stretch gap-0 ${isLeft ? "flex-row" : "flex-row-reverse"}`}
+                    >
+                      <div className={`${wrapperClass} flex flex-col`}>
+                        <CardInner stop={stop} idx={idx} onEyeClick={() => {}} />
+                      </div>
+                      <div className={`${imageSlotClass} flex items-center justify-center`}>
+                        {stop.videoUrl && (
+                          <RaceTikTokPanel
+                            videoUrl={stop.videoUrl}
+                            videoThumbnail={media.raceThumb.src}
+                            videoThumbnailFallback={media.raceThumbFallback.src}
+                            width={media.raceThumb.width}
+                            height={media.raceThumb.height}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Mobile: normal single-column layout */}
+                  <div className={idx === 0 || idx === 1 || idx === 2 ? "md:hidden" : ""}>
+                    <CardInner
+                      stop={stop}
+                      idx={idx}
+                      onEyeClick={idx === 1 ? onOpenTournament : () => {}}
+                    />
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -706,27 +889,53 @@ export default function Timeline({
   raceThumb: OptimizedImage;
   raceThumbFallback: OptimizedImage;
 }) {
-  const ref = React.useRef<HTMLDivElement>(null);
   const [tournamentLightboxOpen, setTournamentLightboxOpen] = React.useState(false);
 
-  const { scrollY } = useScroll();
-  const [range, setRange] = React.useState<[number, number]>([0, 1]);
+  // Group stops by period, preserving insertion order.
+  const groups = React.useMemo(() => {
+    const order: { label: string; items: IndexedStop[] }[] = [];
+    const byLabel = new Map<string, { label: string; items: IndexedStop[] }>();
+    stops.forEach((stop, idx) => {
+      const label = stop.period?.trim() || "Actividades";
+      let group = byLabel.get(label);
+      if (!group) {
+        group = { label, items: [] };
+        byLabel.set(label, group);
+        order.push(group);
+      }
+      group.items.push({ stop, idx });
+    });
+    return order;
+  }, [stops]);
 
-  React.useEffect(() => {
-    const update = () => {
-      const el = ref.current;
-      if (!el) return;
-      const rect = el.getBoundingClientRect();
-      const top = rect.top + window.scrollY;
-      const vh = window.innerHeight;
-      setRange([top - vh * 0.85, top + rect.height - vh * 0.25]);
-    };
-    update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
-  }, []);
+  const media: MediaImages = {
+    tournamentHor,
+    tournamentHorFallback,
+    tournamentVer,
+    tournamentVerFallback,
+    seminarThumb,
+    seminarThumbFallback,
+    raceThumb,
+    raceThumbFallback,
+  };
 
-  const lineScale = useTransform(scrollY, range, [0, 1], { clamp: true });
+  // Historical periods stay collapsed by default; the rest are open.
+  const openSet = React.useMemo(
+    () =>
+      new Set<string>(
+        groups.filter((g) => !g.items.some((i) => i.stop.historical)).map((g) => g.label),
+      ),
+    [groups],
+  );
+  const [openLabels, setOpenLabels] = React.useState<Set<string>>(openSet);
+
+  const toggle = (label: string) =>
+    setOpenLabels((prev) => {
+      const next = new Set(prev);
+      if (next.has(label)) next.delete(label);
+      else next.add(label);
+      return next;
+    });
 
   return (
     <>
@@ -744,121 +953,18 @@ export default function Timeline({
         heightVer={tournamentVer.height}
       />
 
-      <div ref={ref} className="relative mt-14 pl-10 sm:pl-0">
-        {/* Track */}
-        <div className="absolute left-3 top-0 h-full w-0.5 bg-white/8 sm:left-1/2 sm:-translate-x-1/2" />
-        {/* Fill — gradient bright at bottom so the leading tip glows */}
-        <motion.div
-          className="absolute left-3 top-0 h-full w-0.5 origin-top sm:left-1/2 sm:-translate-x-1/2"
-          style={{
-            scaleY: lineScale,
-            background:
-              "linear-gradient(to bottom, rgba(196,163,90,0.3) 0%, #c4a35a 70%, #f0d485 100%)",
-            boxShadow: "0 0 8px 2px rgba(196,163,90,0.6)",
-          }}
-        />
-
-        <div className="flex flex-col gap-6 sm:gap-9">
-          {stops.map((stop, idx) => {
-            const isLeft = idx % 2 === 0;
-            const wrapperClass = isLeft
-              ? "sm:w-[calc(50%-1rem)] sm:pr-10"
-              : "sm:w-[calc(50%-1rem)] sm:pl-10 sm:ml-auto";
-
-            const motionClass =
-              idx === 0 || idx === 1 || idx === 2
-                ? "relative w-full"
-                : `relative w-full ${wrapperClass}`;
-
-            const imageSlotClass = isLeft
-              ? "sm:w-[calc(50%-1rem)] sm:pl-10 sm:ml-auto"
-              : "sm:w-[calc(50%-1rem)] sm:pr-10";
-
-            return (
-              <motion.div
-                key={`${stop.date}-${stop.title}`}
-                initial={{ opacity: 0, y: 18 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: false, margin: "0px 0px -8% 0px" }}
-                transition={{ duration: 0.58, ease: easeOutQuint }}
-                className={motionClass}
-              >
-                {/* Desktop: card in its half + image in the opposite half */}
-                {idx === 0 && (
-                  <div
-                    className={`hidden md:flex items-stretch gap-0 ${isLeft ? "flex-row" : "flex-row-reverse"}`}
-                  >
-                    <div className={`${wrapperClass} flex flex-col`}>
-                      <CardInner stop={stop} idx={idx} onEyeClick={() => {}} />
-                    </div>
-                    <div className={`${imageSlotClass} flex items-center justify-center`}>
-                      {stop.videoUrl && (
-                        <SeminarVideoPanel
-                          videoUrl={stop.videoUrl}
-                          videoThumbnail={seminarThumb.src}
-                          videoThumbnailFallback={seminarThumbFallback.src}
-                          width={seminarThumb.width}
-                          height={seminarThumb.height}
-                        />
-                      )}
-                    </div>
-                  </div>
-                )}
-                {idx === 1 && (
-                  <div className="hidden md:flex flex-row items-stretch gap-0">
-                    <div className={`${imageSlotClass} flex items-center justify-center`}>
-                      <TournamentImagePanel
-                        onClick={() => setTournamentLightboxOpen(true)}
-                        srcHor={tournamentHor.src}
-                        srcHorFallback={tournamentHorFallback.src}
-                        width={tournamentHor.width}
-                        height={tournamentHor.height}
-                      />
-                    </div>
-                    <div className={`${wrapperClass} flex flex-col`}>
-                      <CardInner
-                        stop={stop}
-                        idx={idx}
-                        onEyeClick={() => setTournamentLightboxOpen(true)}
-                      />
-                    </div>
-                  </div>
-                )}
-                {idx === 2 && (
-                  <div
-                    className={`hidden md:flex items-stretch gap-0 ${isLeft ? "flex-row" : "flex-row-reverse"}`}
-                  >
-                    <div className={`${wrapperClass} flex flex-col`}>
-                      <CardInner stop={stop} idx={idx} onEyeClick={() => {}} />
-                    </div>
-                    <div className={`${imageSlotClass} flex items-center justify-center`}>
-                      {stop.videoUrl && (
-                        <RaceTikTokPanel
-                          videoUrl={stop.videoUrl}
-                          videoThumbnail={raceThumb.src}
-                          videoThumbnailFallback={raceThumbFallback.src}
-                          width={raceThumb.width}
-                          height={raceThumb.height}
-                        />
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Mobile: normal single-column layout */}
-                <div className={idx === 0 || idx === 1 || idx === 2 ? "md:hidden" : ""}>
-                  <CardInner
-                    stop={stop}
-                    idx={idx}
-                    onEyeClick={
-                      idx === 1 ? () => setTournamentLightboxOpen(true) : () => {}
-                    }
-                  />
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
+      <div className="mt-14 flex flex-col gap-14">
+        {groups.map((group) => (
+          <PeriodSection
+            key={group.label}
+            label={group.label}
+            open={openLabels.has(group.label)}
+            onToggle={() => toggle(group.label)}
+            items={group.items}
+            media={media}
+            onOpenTournament={() => setTournamentLightboxOpen(true)}
+          />
+        ))}
       </div>
     </>
   );

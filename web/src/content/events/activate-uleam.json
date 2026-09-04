@@ -11,6 +11,8 @@
     "stops": [
       {
         "date": "22 de mayo",
+        "period": "2026-1",
+        "historical": true,
         "title": "Seminario de defensa personal",
         "time": "5:00 – 6:00 p. m.",
         "location": "En la Explanada del Bloque C",
@@ -20,12 +22,16 @@
       },
       {
         "date": "13 de junio",
+        "period": "2026-1",
+        "historical": true,
         "title": "Torneo relámpago de fútbol",
         "time": "9:00 a. m.",
         "location": "Cancha sintética “El Camping”"
       },
       {
         "date": "4 de julio",
+        "period": "2026-1",
+        "historical": true,
         "title": "Gran carrera LDU 5K",
         "time": "7:00 a. m.",
         "details": "En colaboración con el GAD Municipal Chone <br> Contaremos con increíbles premios. <br> Con apoyo de CAI (atención médica para participantes)",
@@ -34,13 +40,12 @@
       },
       {
         "date": "16 de julio",
-        "title": "Implementación de mesas de ajedrez y torneo de ajedrez",
-        "time": "10:00 a. m."
-      },
-      {
-        "date": "16 de julio",
-        "title": "Implementación de mesas de ping pong",
-        "time": "5:00 p. m."
+        "period": "2026-2",
+        "title": "Olimpiadas Uleam Chone 2026",
+        "time": "10:00 a. m. – 5:00 p. m.",
+        "location": "Extensión Chone",
+        "tags": ["Olimpiadas Uleam Chone 2026"],
+        "route": "/olimpiadas-2026"
       }
     ]
   },
