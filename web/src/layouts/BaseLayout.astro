@@ -11,14 +11,17 @@ const { title, description = "Eventos deportivos e integración estudiantil orga
 
 // Absolute origin (needed for OG images — WhatsApp/discord require an absolute
 // URL, not a relative path). Falls back gracefully if Astro.request is missing.
-const origin = (() => {
+const pageUrl = (() => {
   try {
-    return new URL(Astro.request.url).origin;
+    return new URL(Astro.request.url);
   } catch {
     return undefined;
   }
 })();
+const origin = pageUrl?.origin;
+const pathname = pageUrl?.pathname ?? "";
 const ogImage = origin ? `${origin}/icon.png` : undefined;
+const canonicalUrl = origin ? `${origin}${pathname}` : undefined;
 
 // Preconnect to the InsForge API so the admin/registration round-trip doesn't
 // pay the DNS+TLS cost on first request. (The middleware pings it on every
@@ -57,9 +60,12 @@ const insforgeOrigin = (() => {
     <link rel="icon" type="image/png" href="/icon.png?icon.0zbxbt_8_e007.png" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
 
     {/* Open Graph / social share. og:image uses the absolute origin so link
-        previews render when the URL is shared (WhatsApp, etc.). */}
+        previews render when the URL is shared (WhatsApp, etc.). og:url +
+        canonical pin the clean path so query-string variants (?/ etc.) are
+        treated as the same page by crawlers. */}
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
@@ -68,6 +74,7 @@ const insforgeOrigin = (() => {
         <meta property="og:image" content={ogImage} />
         <meta property="og:image:width" content="717" />
         <meta property="og:image:height" content="717" />
+        <meta property="og:url" content={canonicalUrl} />
         <meta name="twitter:card" content="summary" />
         <meta name="twitter:title" content={title} />
         <meta name="twitter:description" content={description} />
