@@ -479,6 +479,8 @@ export default function OlimpiadasClient() {
       setState("error");
       if (error.code === "23505") {
         setCedulaError("Esta cédula ya está registrada en esta disciplina.");
+      } else if (error.code === "EQ001" && error.message) {
+        setErrorMsg(error.message);
       } else {
         setErrorMsg("No se pudo guardar tu inscripción. Intenta de nuevo.");
       }
