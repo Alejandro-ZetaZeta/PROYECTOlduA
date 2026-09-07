@@ -39,6 +39,9 @@ const TOURNAMENT_TARGET = new Date("2026-06-13T14:00:00Z");
 // July 4 2026 07:00 UTC-5
 const RACE_TARGET = new Date("2026-07-04T12:00:00Z");
 
+// Sept 11 2026 08:00 UTC-5
+const OLIMPIADAS_TARGET = new Date("2026-09-11T13:00:00Z");
+
 function useCountdown(target: Date) {
   const calc = () => Math.max(0, Math.floor((target.getTime() - Date.now()) / 1000));
   const [secs, setSecs] = React.useState<number | null>(null);
@@ -120,6 +123,28 @@ function TournamentCountdown() {
 
 function RaceCountdown() {
   const { days, hours, minutes, seconds, done, isReady } = useCountdown(RACE_TARGET);
+
+  return (
+    <div className="mt-4 border-t border-white/8 pt-4">
+      {!isReady ? (
+        <div className="h-[60px]" />
+      ) : done ? null : (
+        <div className="flex flex-col items-center gap-2">
+          <p className="text-[0.6rem] tracking-[0.22em] text-muted/60 uppercase">Comienza en</p>
+          <div className="flex gap-2.5">
+            <CountdownUnit value={days} label="días" />
+            <CountdownUnit value={hours} label="horas" />
+            <CountdownUnit value={minutes} label="min" />
+            <CountdownUnit value={seconds} label="seg" />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function OlimpiadasCountdown() {
+  const { days, hours, minutes, seconds, done, isReady } = useCountdown(OLIMPIADAS_TARGET);
 
   return (
     <div className="mt-4 border-t border-white/8 pt-4">
@@ -551,6 +576,7 @@ function CardInner({
           </div>
         </>
       )}
+      {(idx === 3 || stop.route === "/olimpiadas-2026") && <OlimpiadasCountdown />}
       {stop.route && idx !== 1 && (
         <div className="mt-4 flex justify-center">
           <a
