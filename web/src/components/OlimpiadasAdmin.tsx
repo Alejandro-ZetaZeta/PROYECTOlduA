@@ -43,6 +43,17 @@ const DISCIPLINE_COLUMNS: Record<DisciplinaId, ColumnDef[]> = {
   pingpong: INDIVIDUAL_COLUMNS,
 };
 
+// Disciplinas por equipos: admiten filtro de categoria (masculino/femenino) y
+// filtro secundario por carrera (futbol) o area (basket/ecuavoley).
+const TEAM_DISCIPLINES: DisciplinaId[] = ["futbol", "basket", "ecuavoley"];
+const SECONDARY_KEY: Record<DisciplinaId, string> = {
+  futbol: "carrera",
+  basket: "area_conocimiento",
+  ecuavoley: "area_conocimiento",
+  ajedrez: "",
+  pingpong: "",
+};
+
 function formatCell(key: string, value: unknown): string {
   if (value == null) return "—";
   if (key === "created_at" && typeof value === "string") {
@@ -213,6 +224,8 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [counts, setCounts] = React.useState<Record<DisciplinaId, number>>({
     futbol: 0, basket: 0, ecuavoley: 0, ajedrez: 0, pingpong: 0,
   });
+  const [filtroCategoria, setFiltroCategoria] = React.useState<string>("todos");
+  const [filtroSecundaria, setFiltroSecundaria] = React.useState<string>("todos");
 
   // Verifies the InsForge session is alive and the admin role is still valid.
   const verifySession = React.useCallback(async () => {
@@ -260,6 +273,8 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
 
   async function switchTab(id: DisciplinaId) {
     setTab(id);
+    setFiltroCategoria("todos");
+    setFiltroSecundaria("todos");
     await fetchRows(id);
   }
 
@@ -282,6 +297,22 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const columns = DISCIPLINE_COLUMNS[tab];
   const cfg = getDisciplina(tab);
   const total = counts[tab];
+
+  const esEquipo = TEAM_DISCIPLINES.includes(tab);
+  const secKey = SECONDARY_KEY[tab];
+  const categorias = esEquipo
+    ? Array.from(new Set(rows.map((r) => String(r.categoria ?? "")).filter(Boolean)))
+    : [];
+  const secundarias = esEquipo
+    ? Array.from(new Set(rows.map((r) => String(r[secKey] ?? "")).filter(Boolean)))
+    : [];
+  const filteredRows = esEquipo
+    ? rows.filter(
+        (r) =>
+          (filtroCategoria === "todos" || String(r.categoria) === filtroCategoria) &&
+          (filtroSecundaria === "todos" || String(r[secKey]) === filtroSecundaria),
+      )
+    : rows;
 
   return (
     <AnimatePresence>
@@ -362,9 +393,36 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
           </div>
 
           <div className="flex-1 overflow-auto px-4 py-5 sm:px-6 sm:py-6">
+            {esEquipo && (
+              <div className="mb-4 flex flex-wrap items-center gap-2.5">
+                <select
+                  value={filtroCategoria}
+                  onChange={(e) => setFiltroCategoria(e.target.value)}
+                  className="rounded-xl border border-white/10 bg-[#121212] px-3 py-2 text-xs text-white outline-none focus:border-gold/50"
+                >
+                  <option value="todos">Categoría: todas</option>
+                  {categorias.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+                <select
+                  value={filtroSecundaria}
+                  onChange={(e) => setFiltroSecundaria(e.target.value)}
+                  className="rounded-xl border border-white/10 bg-[#121212] px-3 py-2 text-xs text-white outline-none focus:border-gold/50"
+                >
+                  <option value="todos">{cfg.id === "futbol" ? "Carrera: todas" : "Área: todas"}</option>
+                  {secundarias.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+                <span className="text-[0.65rem] text-white/30">
+                  {filteredRows.length} de {rows.length}
+                </span>
+              </div>
+            )}
             {loading ? (
               <div className="flex h-40 items-center justify-center text-xs text-white/30">Cargando…</div>
-            ) : rows.length === 0 ? (
+            ) : filteredRows.length === 0 ? (
               <div className="flex h-40 items-center justify-center text-xs text-white/30 italic">
                 Sin inscripciones en {cfg.label} aún.
               </div>
@@ -381,7 +439,7 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {rows.map((row, i) => (
+                    {filteredRows.map((row, i) => (
                       <tr key={(row.id as string) ?? i} className="border-b border-white/4 last:border-0 hover:bg-white/2">
                         <td className="px-3 py-2.5 text-center text-xs text-white/50">{i + 1}</td>
                         {columns.map((c) => (
