@@ -105,6 +105,18 @@ function ChevronRight() {
   );
 }
 
+function TrashIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
+      <path d="M3 6h18" />
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <line x1="10" y1="11" x2="10" y2="17" />
+      <line x1="14" y1="11" x2="14" y2="17" />
+    </svg>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Login modal (same users/flows as the tournament admin panel)
 // ---------------------------------------------------------------------------
@@ -226,6 +238,8 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   });
   const [filtroCategoria, setFiltroCategoria] = React.useState<string>("todos");
   const [filtroSecundaria, setFiltroSecundaria] = React.useState<string>("todos");
+  const [confirmDelete, setConfirmDelete] = React.useState<Row | null>(null);
+  const [deleting, setDeleting] = React.useState(false);
 
   // Verifies the InsForge session is alive and the admin role is still valid.
   const verifySession = React.useCallback(async () => {
@@ -292,6 +306,23 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
       await fetch("/api/auth/sign-out", { method: "POST" });
     } catch { /* still reload below */ }
     if (typeof window !== "undefined") window.location.reload();
+  }
+
+  async function deleteRow(row: Row) {
+    if (!(await verifySession())) return;
+    const id = row.id as string;
+    if (!id) return;
+    setDeleting(true);
+    const { error } = await insforge.database
+      .from(getDisciplina(tab).table)
+      .delete()
+      .eq("id", id);
+    setDeleting(false);
+    if (!error) {
+      setConfirmDelete(null);
+      setRows((prev) => prev.filter((r) => r.id !== id));
+      setCounts((prev) => ({ ...prev, [tab]: Math.max(0, prev[tab] - 1) }));
+    }
   }
 
   const columns = DISCIPLINE_COLUMNS[tab];
@@ -431,7 +462,7 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
                 <table className="w-full min-w-[680px] border-collapse text-sm">
                   <thead>
                     <tr className="border-b border-white/8">
-                      {["#", ...columns.map((c) => c.label)].map((h, i) => (
+                      {["#", ...columns.map((c) => c.label), ""].map((h, i) => (
                         <th key={i} className="px-3 py-3 text-center text-[0.6rem] tracking-[0.2em] font-medium text-white/35 uppercase">
                           {h}
                         </th>
@@ -447,6 +478,16 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
                             {formatCell(c.key, row[c.key])}
                           </td>
                         ))}
+                        <td className="px-3 py-2.5 text-center">
+                          <button
+                            onClick={() => setConfirmDelete(row)}
+                            title="Eliminar inscripción"
+                            aria-label="Eliminar inscripción"
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/3 text-white/40 transition-colors hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-400"
+                          >
+                            <TrashIcon />
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -454,6 +495,55 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
               </div>
             )}
           </div>
+
+          <AnimatePresence>
+            {confirmDelete && (
+              <motion.div
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+                style={{ backdropFilter: "blur(8px)", background: "rgba(0,0,0,0.7)" }}
+                onClick={() => setConfirmDelete(null)}
+              >
+                <motion.div
+                  initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.92, opacity: 0 }} transition={{ duration: 0.2 }}
+                  className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#0f0f0f] p-6 shadow-2xl"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <p className="text-[0.6rem] tracking-[0.3em] text-red-400 uppercase">Eliminar inscripción</p>
+                  <h3 className="mt-2 font-[var(--font-display)] text-lg text-white">¿Confirmas la eliminación?</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-white/50">
+                    Se eliminará permanentemente el equipo{" "}
+                    <span className="text-white">“{String(confirmDelete.nombre_equipo ?? confirmDelete.nombres ?? "—")}”</span>{" "}
+                    de {cfg.label}
+                    {esEquipo ? (
+                      <> — {String(confirmDelete.categoria ?? "")} · {String(confirmDelete[secKey] ?? "")}</>
+                    ) : (
+                      <> — {String(confirmDelete.carrera ?? "")}</>
+                    )}
+                    . Esta acción no se puede deshacer.
+                  </p>
+                  <div className="mt-6 flex justify-end gap-2">
+                    <button
+                      onClick={() => setConfirmDelete(null)}
+                      disabled={deleting}
+                      className="rounded-xl border border-white/10 bg-white/3 px-4 py-2 text-xs tracking-[0.15em] text-white/60 transition-colors hover:text-white disabled:opacity-50"
+                    >
+                      CANCELAR
+                    </button>
+                    <button
+                      onClick={() => deleteRow(confirmDelete)}
+                      disabled={deleting}
+                      className="rounded-xl border border-red-500/50 bg-red-500/15 px-4 py-2 text-xs tracking-[0.15em] text-red-300 transition-colors hover:bg-red-500/25 disabled:opacity-50"
+                    >
+                      {deleting ? "ELIMINANDO…" : "ELIMINAR"}
+                    </button>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
       )}
     </AnimatePresence>
