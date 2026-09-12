@@ -4,6 +4,7 @@ import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { insforge } from "@/lib/insforge/browser";
 import { DISCIPLINAS, getDisciplina, type DisciplinaId } from "@/data/olimpiadas";
+import PartidosPanel from "./OlimpiadasPartidos";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -229,13 +230,14 @@ function LoginModal({ open, onClose, onSuccess }: { open: boolean; onClose: () =
 // ---------------------------------------------------------------------------
 
 function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const [tab, setTab] = React.useState<DisciplinaId>("futbol");
+  const [tab, setTab] = React.useState<DisciplinaId | "partidos">("futbol");
   const [rows, setRows] = React.useState<Row[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [adminEmail, setAdminEmail] = React.useState<string | null>(null);
   const [counts, setCounts] = React.useState<Record<DisciplinaId, number>>({
     futbol: 0, basket: 0, ecuavoley: 0, ajedrez: 0, pingpong: 0,
   });
+  const [partidosCount, setPartidosCount] = React.useState(0);
   const [filtroCategoria, setFiltroCategoria] = React.useState<string>("todos");
   const [filtroSecundaria, setFiltroSecundaria] = React.useState<string>("todos");
   const [confirmDelete, setConfirmDelete] = React.useState<Row | null>(null);
@@ -275,9 +277,13 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
       if (Array.isArray(list)) next[d.id] = list.length;
     });
     setCounts(next);
+    const { data: partidosList } = await insforge.database
+      .from("partidos_olimpiadas")
+      .select("id");
+    if (Array.isArray(partidosList)) setPartidosCount(partidosList.length);
     const { data } = await insforge.auth.getCurrentUser();
     if (data?.user) setAdminEmail(data.user.email ?? null);
-    await fetchRows(tab);
+    if (tab !== "partidos") await fetchRows(tab);
     setLoading(false);
   }
 
@@ -285,17 +291,19 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
     if (open) loadAll();
   }, [open]);
 
-  async function switchTab(id: DisciplinaId) {
+  async function switchTab(id: DisciplinaId | "partidos") {
     setTab(id);
     setFiltroCategoria("todos");
     setFiltroSecundaria("todos");
-    await fetchRows(id);
+    if (id !== "partidos") await fetchRows(id);
   }
 
+  const ALL_TABS: (DisciplinaId | "partidos")[] = [...DISCIPLINAS.map((d) => d.id), "partidos"];
+
   function moveDiscipline(dir: 1 | -1) {
-    const idx = DISCIPLINAS.findIndex((d) => d.id === tab);
-    const nextIdx = (idx + dir + DISCIPLINAS.length) % DISCIPLINAS.length;
-    switchTab(DISCIPLINAS[nextIdx].id);
+    const idx = ALL_TABS.indexOf(tab);
+    const nextIdx = (idx + dir + ALL_TABS.length) % ALL_TABS.length;
+    switchTab(ALL_TABS[nextIdx]);
   }
 
   async function handleLogout() {
@@ -309,6 +317,7 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   }
 
   async function deleteRow(row: Row) {
+    if (tab === "partidos") return;
     if (!(await verifySession())) return;
     const id = row.id as string;
     if (!id) return;
@@ -325,12 +334,13 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
     }
   }
 
-  const columns = DISCIPLINE_COLUMNS[tab];
-  const cfg = getDisciplina(tab);
-  const total = counts[tab];
+  const esPartidos = tab === "partidos";
+  const columns = esPartidos ? [] : DISCIPLINE_COLUMNS[tab];
+  const cfg = tab === "partidos" ? null : getDisciplina(tab);
+  const total = tab === "partidos" ? partidosCount : counts[tab];
 
-  const esEquipo = TEAM_DISCIPLINES.includes(tab);
-  const secKey = SECONDARY_KEY[tab];
+  const esEquipo = tab !== "partidos" && TEAM_DISCIPLINES.includes(tab);
+  const secKey = tab === "partidos" ? "" : SECONDARY_KEY[tab];
   const categorias = esEquipo
     ? Array.from(new Set(rows.map((r) => String(r.categoria ?? "")).filter(Boolean)))
     : [];
@@ -358,7 +368,9 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
               <div className="flex min-w-0 items-center gap-3">
                 <p className="shrink-0 text-[0.6rem] tracking-[0.28em] text-gold uppercase">Panel Admin · Olimpiadas 2026</p>
                 <span className="hidden text-[0.65rem] text-white/30 sm:block truncate">
-                  {total} inscripciones en {cfg.label}
+                  {esPartidos
+                    ? `${total} partidos`
+                    : `${total} inscripciones en ${cfg!.label}`}
                   {adminEmail && <span className="hidden text-white/20 md:inline"> · {adminEmail}</span>}
                 </span>
               </div>
@@ -383,7 +395,9 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
               </div>
             </div>
             <div className="flex items-center justify-between px-4 pb-2 sm:hidden">
-              <span className="text-[0.65rem] text-white/30">{total} inscripciones en {cfg.label}</span>
+              <span className="text-[0.65rem] text-white/30">
+                {esPartidos ? `${total} partidos` : `${total} inscripciones en ${cfg!.label}`}
+              </span>
               <button onClick={handleLogout}
                 className="text-[0.65rem] tracking-[0.18em] text-white/30 transition-colors hover:text-white/60">
                 CERRAR SESIÓN
@@ -403,6 +417,15 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
                     <span className="text-[0.6rem] opacity-70">({counts[d.id]})</span>
                   </button>
                 ))}
+                <button key="partidos" onClick={() => switchTab("partidos")}
+                  className={`flex min-w-max flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-4 py-2 text-[0.65rem] tracking-[0.15em] uppercase transition-all ${
+                    tab === "partidos"
+                      ? "border border-gold/30 bg-gold/15 text-gold"
+                      : "border border-transparent text-white/40 hover:text-white/70"
+                  }`}>
+                  Partidos
+                  <span className="text-[0.6rem] opacity-70">({partidosCount})</span>
+                </button>
               </div>
             </div>
 
@@ -413,8 +436,12 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
                 <ChevronLeft />
               </button>
               <div className="flex flex-1 items-center justify-between gap-2 rounded-xl border border-gold/30 bg-gold/10 px-4 py-2.5">
-                <span className="text-[0.72rem] tracking-[0.15em] text-gold uppercase">{cfg.label}</span>
-                <span className="text-[0.65rem] text-white/40">{counts[tab]} inscripciones</span>
+                <span className="text-[0.72rem] tracking-[0.15em] text-gold uppercase">
+                  {esPartidos ? "Partidos" : cfg!.label}
+                </span>
+                <span className="text-[0.65rem] text-white/40">
+                  {esPartidos ? `${total} partidos` : `${counts[tab]} inscripciones`}
+                </span>
               </div>
               <button onClick={() => moveDiscipline(1)} aria-label="Disciplina siguiente"
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/3 text-white/50 transition-colors hover:border-gold/40 hover:text-gold">
@@ -441,7 +468,7 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
                   onChange={(e) => setFiltroSecundaria(e.target.value)}
                   className="rounded-xl border border-white/10 bg-[#121212] px-3 py-2 text-xs text-white outline-none focus:border-gold/50"
                 >
-                  <option value="todos">{cfg.id === "futbol" ? "Carrera: todas" : "Área: todas"}</option>
+                  <option value="todos">{cfg!.id === "futbol" ? "Carrera: todas" : "Área: todas"}</option>
                   {secundarias.map((s) => (
                     <option key={s} value={s}>{s}</option>
                   ))}
@@ -451,11 +478,13 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
                 </span>
               </div>
             )}
-            {loading ? (
+            {esPartidos ? (
+              <PartidosPanel onCountChange={setPartidosCount} />
+            ) : loading ? (
               <div className="flex h-40 items-center justify-center text-xs text-white/30">Cargando…</div>
             ) : filteredRows.length === 0 ? (
               <div className="flex h-40 items-center justify-center text-xs text-white/30 italic">
-                Sin inscripciones en {cfg.label} aún.
+                Sin inscripciones en {cfg!.label} aún.
               </div>
             ) : (
               <div className="w-full overflow-x-auto rounded-2xl border border-white/8">
@@ -516,7 +545,7 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
                   <p className="mt-2 text-sm leading-relaxed text-white/50">
                     Se eliminará permanentemente el equipo{" "}
                     <span className="text-white">“{String(confirmDelete.nombre_equipo ?? confirmDelete.nombres ?? "—")}”</span>{" "}
-                    de {cfg.label}
+                    de {cfg!.label}
                     {esEquipo ? (
                       <> — {String(confirmDelete.categoria ?? "")} · {String(confirmDelete[secKey] ?? "")}</>
                     ) : (
