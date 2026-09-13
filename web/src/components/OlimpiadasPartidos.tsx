@@ -89,6 +89,106 @@ function formatTime(totalSec: number): string {
 }
 
 // ---------------------------------------------------------------------------
+// Persistent match clock engine
+// ---------------------------------------------------------------------------
+// The countdown lives outside React so it keeps ticking (and keeps being
+// persisted to the DB) even when the control modal is closed or the admin
+// switches to another tab. Remaining time is always derived from the wall
+// clock, so browser background-tab throttling or delayed ticks never drift
+// or freeze the countdown.
+
+interface ClockState {
+  matchId: string;
+  remaining: number;
+  at: number;
+}
+
+let clock: ClockState | null = null;
+let clockTimerId: number | null = null;
+let lastClockPersistAt = 0;
+const clockListeners = new Set<(remaining: number, running: boolean) => void>();
+
+function clockRemaining(state: ClockState): number {
+  return Math.max(0, state.remaining - Math.floor((Date.now() - state.at) / 1000));
+}
+
+function clockEmit(remaining: number, running: boolean) {
+  clockListeners.forEach((l) => l(remaining, running));
+}
+
+function clockPersist(state: ClockState, enCurso: boolean) {
+  void insforge.database
+    .from("partidos_olimpiadas")
+    .update([{ segundos_restantes: clockRemaining(state), en_curso: enCurso }])
+    .eq("id", state.matchId);
+}
+
+function clockStop(notify = true) {
+  if (clockTimerId != null) {
+    window.clearInterval(clockTimerId);
+    clockTimerId = null;
+  }
+  if (notify && clock) clockEmit(clockRemaining(clock), false);
+  clock = null;
+}
+
+function clockStart(state: ClockState) {
+  if (clock && clock.matchId !== state.matchId) {
+    // Replacing another running match: leave its DB clock as-is; the
+    // elapsed-time compensation on its next open recovers it.
+    clockEmit(clockRemaining(clock), false);
+  }
+  clock = state;
+  lastClockPersistAt = Date.now();
+  clockPersist(state, true);
+  if (clockTimerId == null) {
+    clockTimerId = window.setInterval(() => void clockTick(), 1000);
+  }
+  clockEmit(state.remaining, true);
+}
+
+function clockPause() {
+  if (!clock) return;
+  const s = clock;
+  clockStop();
+  clockPersist({ matchId: s.matchId, remaining: clockRemaining(s), at: Date.now() }, false);
+}
+
+async function clockTick() {
+  if (!clock) return;
+  const s = clock;
+  const rem = clockRemaining(s);
+  if (rem <= 0) {
+    clockStop();
+    clockPersist({ matchId: s.matchId, remaining: 0, at: Date.now() }, false);
+    return;
+  }
+  const now = Date.now();
+  if (now - lastClockPersistAt >= 5000) {
+    lastClockPersistAt = now;
+    clockPersist(s, true);
+  }
+  clockEmit(rem, true);
+}
+
+function subscribeClock(listener: (remaining: number, running: boolean) => void): () => void {
+  clockListeners.add(listener);
+  if (clock) listener(clockRemaining(clock), true);
+  return () => clockListeners.delete(listener);
+}
+
+// Fresh anchor on tab hide/unload so a hard reload compensates precisely.
+if (typeof window !== "undefined") {
+  const persistOnLeave = () => {
+    if (clock) clockPersist(clock, true);
+  };
+  window.addEventListener("pagehide", persistOnLeave);
+  window.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") persistOnLeave();
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Icons
 // ---------------------------------------------------------------------------
 
@@ -217,12 +317,14 @@ function MatchControlModal({
   const persist = React.useCallback(
     async (patch: Record<string, unknown>) => {
       if (!matchRef.current) return;
+      const rem =
+        clock && clock.matchId === matchId ? clockRemaining(clock) : remainingRef.current;
       await insforge.database
         .from("partidos_olimpiadas")
         .update([
           {
             ...patch,
-            segundos_restantes: remainingRef.current,
+            segundos_restantes: rem,
             en_curso: runningRef.current,
           },
         ])
@@ -261,56 +363,32 @@ function MatchControlModal({
       setPenales({ local: m.penales_local ?? 0, visitante: m.penales_visitante ?? 0 });
       setShowPenales(false);
       setLoading(false);
+      if (run) {
+        if (rem > 0) {
+          // Resume the background clock so it keeps running even if the
+          // modal is closed right away.
+          clockStart({ matchId, remaining: rem, at: Date.now() });
+        } else {
+          insforge.database
+            .from("partidos_olimpiadas")
+            .update([{ segundos_restantes: 0, en_curso: false }])
+            .eq("id", matchId);
+        }
+      }
     })();
     return () => {
       active = false;
     };
   }, [matchId]);
 
-  // Countdown tick
+  // Display follows the background clock: it keeps ticking while the modal
+  // is open and stays correct when it's re-opened.
   React.useEffect(() => {
-    if (!running) return;
-    const id = window.setInterval(() => {
-      setRemaining((prev) => {
-        const next = prev - 1;
-        if (next <= 0) {
-          setRunning(false);
-          runningRef.current = false;
-          persist({});
-          return 0;
-        }
-        return next;
-      });
-    }, 1000);
-    return () => window.clearInterval(id);
-  }, [running, persist]);
-
-  // Heartbeat: keeps the countdown fresh in the DB while running, so a tab
-  // close / reload doesn't lose the running clock.
-  React.useEffect(() => {
-    if (!running) return;
-    const id = window.setInterval(() => {
-      if (matchRef.current) persist({});
-    }, 5000);
-    return () => window.clearInterval(id);
-  }, [running, persist]);
-
-  // Best-effort timer save when the modal unmounts.
-  React.useEffect(() => {
-    return () => {
-      if (matchRef.current) {
-        insforge.database
-          .from("partidos_olimpiadas")
-          .update([
-            {
-              segundos_restantes: remainingRef.current,
-              en_curso: runningRef.current,
-            },
-          ])
-          .eq("id", matchId);
-      }
-    };
-  }, [matchId]);
+    return subscribeClock((rem, run) => {
+      setRemaining(rem);
+      setRunning(run);
+    });
+  }, []);
 
   // Fullscreen API
   React.useEffect(() => {
@@ -360,24 +438,36 @@ function MatchControlModal({
 
   function toggleTimer() {
     if (!match) return;
-    if (remainingRef.current <= 0) {
+    const rem = clock && clock.matchId === matchId ? clockRemaining(clock) : remainingRef.current;
+    if (rem <= 0) {
       const m = matchRef.current;
       if (m && m.tiempo_actual >= m.num_tiempos) setShowPenales(true);
       return;
     }
-    const next = !runningRef.current;
-    runningRef.current = next;
-    setRunning(next);
+    if (runningRef.current) {
+      if (clock?.matchId === matchId) {
+        clockPause();
+      } else {
+        runningRef.current = false;
+        setRunning(false);
+        void persist({});
+      }
+      return;
+    }
+    runningRef.current = true;
+    setRunning(true);
     const patch: Record<string, unknown> = {};
-    if (next && matchRef.current?.estado === "pendiente") {
+    if (matchRef.current?.estado === "pendiente") {
       patch.estado = "en_curso";
       setMatch((m) => (m ? { ...m, estado: "en_curso" } : m));
     }
+    clockStart({ matchId, remaining: rem, at: Date.now() });
     void persist(patch);
   }
 
   function selectTiempo(n: number) {
     if (!match || n === match.tiempo_actual) return;
+    if (clock?.matchId === matchId) clockStop();
     runningRef.current = false;
     remainingRef.current = match.duracion_tiempo;
     setRunning(false);
@@ -388,6 +478,7 @@ function MatchControlModal({
 
   function resetTimer() {
     if (!match) return;
+    if (clock?.matchId === matchId) clockStop();
     runningRef.current = false;
     remainingRef.current = match.duracion_tiempo;
     setRunning(false);
@@ -397,14 +488,31 @@ function MatchControlModal({
 
   function ajustarTiempo(deltaSec: number) {
     if (!match) return;
-    const next = Math.max(0, remainingRef.current + deltaSec);
-    remainingRef.current = next;
-    setRemaining(next);
+    const rem = clock && clock.matchId === matchId ? clockRemaining(clock) : remainingRef.current;
+    const next = Math.max(0, rem + deltaSec);
+    if (next <= 0) {
+      if (clock?.matchId === matchId) clockStop();
+      runningRef.current = false;
+      remainingRef.current = 0;
+      setRunning(false);
+      setRemaining(0);
+      void persist({});
+      return;
+    }
+    if (clock?.matchId === matchId) {
+      clockStart({ matchId, remaining: next, at: Date.now() });
+      runningRef.current = true;
+      setRunning(true);
+    } else {
+      remainingRef.current = next;
+      setRemaining(next);
+    }
     void persist({});
   }
 
   async function guardarFinal(patch: Record<string, unknown>) {
     if (!match) return;
+    if (clock?.matchId === matchId) clockStop();
     runningRef.current = false;
     setRunning(false);
     setMatch((m) => (m ? { ...m, estado: "finalizado", ...patch } : m));
@@ -433,6 +541,7 @@ function MatchControlModal({
 
   async function resetCompleto() {
     if (!match) return;
+    if (clock?.matchId === matchId) clockStop();
     runningRef.current = false;
     remainingRef.current = match.duracion_tiempo;
     setRunning(false);

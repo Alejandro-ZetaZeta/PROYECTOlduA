@@ -183,7 +183,7 @@ function LoginModal({ open, onClose, onSuccess }: { open: boolean; onClose: () =
             onClick={(e) => e.stopPropagation()}
           >
             <p className="text-[0.6rem] tracking-[0.3em] text-gold">ADMINISTRACIÓN</p>
-            <h2 className="mt-2 font-[var(--font-display)] text-xl tracking-tight text-white">Acceso restringido</h2>
+            <h2 className="mt-2 font-(--font-display) text-xl tracking-tight text-white">Acceso restringido</h2>
             <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
                 <label className="text-[0.7rem] tracking-[0.2em] text-white/40 uppercase">Correo</label>
@@ -488,7 +488,7 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
               </div>
             ) : (
               <div className="w-full overflow-x-auto rounded-2xl border border-white/8">
-                <table className="w-full min-w-[680px] border-collapse text-sm">
+                <table className="w-full min-w-170 border-collapse text-sm">
                   <thead>
                     <tr className="border-b border-white/8">
                       {["#", ...columns.map((c) => c.label), ""].map((h, i) => (
@@ -530,7 +530,7 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
               <motion.div
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                 transition={{ duration: 0.15 }}
-                className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+                className="fixed inset-0 z-60 flex items-center justify-center p-4"
                 style={{ backdropFilter: "blur(8px)", background: "rgba(0,0,0,0.7)" }}
                 onClick={() => setConfirmDelete(null)}
               >
@@ -541,7 +541,7 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
                   onClick={(e) => e.stopPropagation()}
                 >
                   <p className="text-[0.6rem] tracking-[0.3em] text-red-400 uppercase">Eliminar inscripción</p>
-                  <h3 className="mt-2 font-[var(--font-display)] text-lg text-white">¿Confirmas la eliminación?</h3>
+                  <h3 className="mt-2 font-(--font-display) text-lg text-white">¿Confirmas la eliminación?</h3>
                   <p className="mt-2 text-sm leading-relaxed text-white/50">
                     Se eliminará permanentemente el equipo{" "}
                     <span className="text-white">“{String(confirmDelete.nombre_equipo ?? confirmDelete.nombres ?? "—")}”</span>{" "}
