@@ -8,10 +8,12 @@ import {
   CARRERAS,
   AREAS,
   NIVELES,
+  INSCRIPCIONES_ABIERTAS,
   getDisciplina,
   type DisciplinaId,
   type DisciplinaConfig,
 } from "@/data/olimpiadas";
+import StandingsTable from "./olimpiadas/StandingsTable";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -523,7 +525,8 @@ export default function OlimpiadasClient() {
             Elige tu disciplina
           </h1>
           <p className="mx-auto mt-4 max-w-md text-sm leading-[1.85] text-white/45">
-            Selecciona la disciplina en la que quieres competir. El formulario se adapta a cada una.
+            Inscripciones abiertas para {INSCRIPCIONES_ABIERTAS.join(" y ")}. Fútbol, Basket y Ecuavoley
+            cerraron sus registros; aquí publicamos su calendario y sus tablas clasificatorias.
           </p>
         </div>
 
@@ -575,10 +578,20 @@ export default function OlimpiadasClient() {
                   )}
                 </div>
               </div>
-              <p className="mt-4 text-sm leading-[1.85] text-white/50">{cfg.descripcion}</p>
+              {cfg.inscripcionAbierta && (
+                <p className="mt-4 text-sm leading-[1.85] text-white/50">{cfg.descripcion}</p>
+              )}
             </div>
 
             {/* Form */}
+            {!cfg.inscripcionAbierta ? (
+              <div className="mt-6 rounded-2xl border border-white/10 bg-white/3 p-8 text-center backdrop-blur-sm">
+                <p className="text-[0.62rem] tracking-[0.3em] text-gold uppercase">Registros cerrados</p>
+                <p className="mt-3 text-sm text-white/45">
+                  Todavía puedes inscribirte en {INSCRIPCIONES_ABIERTAS.join(" y ")}.
+                </p>
+              </div>
+            ) : (
             <form onSubmit={handleSubmit} className="mt-6 rounded-2xl border border-white/10 bg-white/3 p-6 backdrop-blur-sm sm:p-8">
               {state === "success" ? (
                 <div className="flex flex-col items-center gap-4 py-8 text-center">
@@ -758,14 +771,20 @@ export default function OlimpiadasClient() {
                 </div>
               )}
             </form>
+            )}
 
-            {/* Clasificatorias placeholder per discipline */}
-            <div className="mt-6 rounded-2xl border border-dashed border-white/15 bg-white/2 p-6 text-center">
-              <p className="text-[0.65rem] tracking-[0.28em] text-white/30 uppercase">Tabla clasificatoria</p>
-              <p className="mt-2 text-sm text-white/40">
-                {cfg.label} · las posiciones y resultados de esta disciplina se publicarán aquí.
-              </p>
-            </div>
+            {cfg.tablaActiva ? (
+              <div className="mt-6">
+                <StandingsTable disciplina={cfg.id} />
+              </div>
+            ) : (
+              <div className="mt-6 rounded-2xl border border-dashed border-white/15 bg-white/2 p-6 text-center">
+                <p className="text-[0.65rem] tracking-[0.28em] text-white/30 uppercase">Tabla clasificatoria</p>
+                <p className="mt-2 text-sm text-white/40">
+                  {cfg.label} · las posiciones y resultados de esta disciplina se publicarán aquí.
+                </p>
+              </div>
+            )}
           </motion.div>
         </AnimatePresence>
       </div>
@@ -780,3 +799,5 @@ function BackArrow() {
     </svg>
   );
 }
+
+

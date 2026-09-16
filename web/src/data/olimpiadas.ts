@@ -66,6 +66,9 @@ export interface DisciplinaConfig {
   categorias: readonly string[];
   table: string;
   descripcion: string;
+  inscripcionAbierta: boolean;
+  tablaActiva: boolean;
+  sorteoActivo: boolean;
 }
 
 export const DISCIPLINAS: DisciplinaConfig[] = [
@@ -76,7 +79,10 @@ export const DISCIPLINAS: DisciplinaConfig[] = [
     categorias: CATEGORIAS,
     table: "inscripciones_futbol",
     descripcion:
-      "Torneo de fútbol por equipos. Inscribe a tu equipo eligiendo categoría masculina o femenina. Solo se registra al representante.",
+      "Registros cerrados. Los equipos ya inscritos fueron sorteados en grupos A y B (femenino) y A, B, C y D (masculino). Consulta aquí el calendario y la tabla clasificatoria en vivo.",
+    inscripcionAbierta: false,
+    tablaActiva: true,
+    sorteoActivo: true,
   },
   {
     id: "basket",
@@ -85,7 +91,10 @@ export const DISCIPLINAS: DisciplinaConfig[] = [
     categorias: CATEGORIAS,
     table: "inscripciones_basket",
     descripcion:
-      "Torneo de baloncesto por equipos. Elige la categoría e inscribe a tu equipo a través del representante.",
+      "Registros cerrados. El torneo de baloncesto por equipos definirá su calendario próximamente.",
+    inscripcionAbierta: false,
+    tablaActiva: false,
+    sorteoActivo: false,
   },
   {
     id: "ecuavoley",
@@ -94,7 +103,10 @@ export const DISCIPLINAS: DisciplinaConfig[] = [
     categorias: CATEGORIAS,
     table: "inscripciones_ecuavoley",
     descripcion:
-      "Torneo de ecuavoley por equipos. Elige la categoría e inscribe a tu equipo a través del representante.",
+      "Registros cerrados. El torneo de ecuavoley por equipos definirá su calendario próximamente.",
+    inscripcionAbierta: false,
+    tablaActiva: false,
+    sorteoActivo: false,
   },
   {
     id: "ajedrez",
@@ -103,7 +115,10 @@ export const DISCIPLINAS: DisciplinaConfig[] = [
     categorias: [],
     table: "inscripciones_ajedrez",
     descripcion:
-      "Competencia individual de ajedrez. Abierta a cualquier participante, sin distinción de género.",
+      "Inscripciones abiertas. Competencia individual de ajedrez, abierta a cualquier participante, sin distinción de género.",
+    inscripcionAbierta: true,
+    tablaActiva: false,
+    sorteoActivo: false,
   },
   {
     id: "pingpong",
@@ -112,9 +127,16 @@ export const DISCIPLINAS: DisciplinaConfig[] = [
     categorias: [],
     table: "inscripciones_pingpong",
     descripcion:
-      "Competencia individual de ping pong. Abierta a cualquier participante, sin distinción de género.",
+      "Inscripciones abiertas. Competencia individual de ping pong, abierta a cualquier participante, sin distinción de género.",
+    inscripcionAbierta: true,
+    tablaActiva: false,
+    sorteoActivo: false,
   },
 ];
+
+export const INSCRIPCIONES_ABIERTAS = DISCIPLINAS.filter((d) => d.inscripcionAbierta).map(
+  (d) => d.label,
+);
 
 export function getDisciplina(id: DisciplinaId): DisciplinaConfig {
   return DISCIPLINAS.find((d) => d.id === id) ?? DISCIPLINAS[0];

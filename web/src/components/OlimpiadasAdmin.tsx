@@ -5,12 +5,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { insforge } from "@/lib/insforge/browser";
 import { DISCIPLINAS, getDisciplina, type DisciplinaId } from "@/data/olimpiadas";
 import PartidosPanel from "./OlimpiadasPartidos";
+import DrawController from "./olimpiadas/DrawController";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
 type Row = Record<string, unknown>;
+type AdminTab = DisciplinaId | "partidos" | "grupos";
 
 interface ColumnDef {
   key: string;
@@ -230,7 +232,7 @@ function LoginModal({ open, onClose, onSuccess }: { open: boolean; onClose: () =
 // ---------------------------------------------------------------------------
 
 function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const [tab, setTab] = React.useState<DisciplinaId | "partidos">("futbol");
+  const [tab, setTab] = React.useState<AdminTab>("futbol");
   const [rows, setRows] = React.useState<Row[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [adminEmail, setAdminEmail] = React.useState<string | null>(null);
@@ -283,7 +285,7 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
     if (Array.isArray(partidosList)) setPartidosCount(partidosList.length);
     const { data } = await insforge.auth.getCurrentUser();
     if (data?.user) setAdminEmail(data.user.email ?? null);
-    if (tab !== "partidos") await fetchRows(tab);
+    if (tab !== "partidos" && tab !== "grupos") await fetchRows(tab);
     setLoading(false);
   }
 
@@ -291,14 +293,14 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
     if (open) loadAll();
   }, [open]);
 
-  async function switchTab(id: DisciplinaId | "partidos") {
+  async function switchTab(id: AdminTab) {
     setTab(id);
     setFiltroCategoria("todos");
     setFiltroSecundaria("todos");
-    if (id !== "partidos") await fetchRows(id);
+    if (id !== "partidos" && id !== "grupos") await fetchRows(id);
   }
 
-  const ALL_TABS: (DisciplinaId | "partidos")[] = [...DISCIPLINAS.map((d) => d.id), "partidos"];
+  const ALL_TABS: AdminTab[] = [...DISCIPLINAS.map((d) => d.id), "partidos", "grupos"];
 
   function moveDiscipline(dir: 1 | -1) {
     const idx = ALL_TABS.indexOf(tab);
@@ -317,7 +319,7 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   }
 
   async function deleteRow(row: Row) {
-    if (tab === "partidos") return;
+    if (tab === "partidos" || tab === "grupos") return;
     if (!(await verifySession())) return;
     const id = row.id as string;
     if (!id) return;
@@ -335,12 +337,19 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   }
 
   const esPartidos = tab === "partidos";
-  const columns = esPartidos ? [] : DISCIPLINE_COLUMNS[tab];
-  const cfg = tab === "partidos" ? null : getDisciplina(tab);
-  const total = tab === "partidos" ? partidosCount : counts[tab];
+  const esGrupos = tab === "grupos";
+  const columns = tab !== "partidos" && tab !== "grupos" ? DISCIPLINE_COLUMNS[tab] : [];
+  const cfg = tab !== "partidos" && tab !== "grupos" ? getDisciplina(tab) : null;
+  const total = tab === "partidos" ? partidosCount : tab === "grupos" ? 0 : counts[tab];
+  const tabTitulo = esPartidos ? "Partidos" : esGrupos ? "Grupos" : cfg!.label;
+  const tabResumen = esPartidos
+    ? `${total} partidos`
+    : esGrupos
+      ? "Sorteo y calendario"
+      : `${total} inscripciones en ${cfg!.label}`;
 
-  const esEquipo = tab !== "partidos" && TEAM_DISCIPLINES.includes(tab);
-  const secKey = tab === "partidos" ? "" : SECONDARY_KEY[tab];
+  const esEquipo = tab !== "partidos" && tab !== "grupos" && TEAM_DISCIPLINES.includes(tab);
+  const secKey = tab !== "partidos" && tab !== "grupos" ? SECONDARY_KEY[tab] : "";
   const categorias = esEquipo
     ? Array.from(new Set(rows.map((r) => String(r.categoria ?? "")).filter(Boolean)))
     : [];
@@ -368,9 +377,7 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
               <div className="flex min-w-0 items-center gap-3">
                 <p className="shrink-0 text-[0.6rem] tracking-[0.28em] text-gold uppercase">Panel Admin · Olimpiadas 2026</p>
                 <span className="hidden text-[0.65rem] text-white/30 sm:block truncate">
-                  {esPartidos
-                    ? `${total} partidos`
-                    : `${total} inscripciones en ${cfg!.label}`}
+                  {tabResumen}
                   {adminEmail && <span className="hidden text-white/20 md:inline"> · {adminEmail}</span>}
                 </span>
               </div>
@@ -396,7 +403,7 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
             </div>
             <div className="flex items-center justify-between px-4 pb-2 sm:hidden">
               <span className="text-[0.65rem] text-white/30">
-                {esPartidos ? `${total} partidos` : `${total} inscripciones en ${cfg!.label}`}
+                {tabResumen}
               </span>
               <button onClick={handleLogout}
                 className="text-[0.65rem] tracking-[0.18em] text-white/30 transition-colors hover:text-white/60">
@@ -426,6 +433,14 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
                   Partidos
                   <span className="text-[0.6rem] opacity-70">({partidosCount})</span>
                 </button>
+                <button key="grupos" onClick={() => switchTab("grupos")}
+                  className={`flex min-w-max flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-4 py-2 text-[0.65rem] tracking-[0.15em] uppercase transition-all ${
+                    tab === "grupos"
+                      ? "border border-gold/30 bg-gold/15 text-gold"
+                      : "border border-transparent text-white/40 hover:text-white/70"
+                  }`}>
+                  Grupos
+                </button>
               </div>
             </div>
 
@@ -437,10 +452,10 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
               </button>
               <div className="flex flex-1 items-center justify-between gap-2 rounded-xl border border-gold/30 bg-gold/10 px-4 py-2.5">
                 <span className="text-[0.72rem] tracking-[0.15em] text-gold uppercase">
-                  {esPartidos ? "Partidos" : cfg!.label}
+                  {tabTitulo}
                 </span>
                 <span className="text-[0.65rem] text-white/40">
-                  {esPartidos ? `${total} partidos` : `${counts[tab]} inscripciones`}
+                  {tabResumen}
                 </span>
               </div>
               <button onClick={() => moveDiscipline(1)} aria-label="Disciplina siguiente"
@@ -480,6 +495,8 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
             )}
             {esPartidos ? (
               <PartidosPanel onCountChange={setPartidosCount} />
+            ) : esGrupos ? (
+              <DrawController />
             ) : loading ? (
               <div className="flex h-40 items-center justify-center text-xs text-white/30">Cargando…</div>
             ) : filteredRows.length === 0 ? (

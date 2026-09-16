@@ -43,6 +43,16 @@ interface PartidoOlimpiadas {
   historial: Accion[];
   created_at: string;
   updated_at: string;
+  disciplina?: string;
+  categoria?: string | null;
+  grupo?: string | null;
+  fecha?: number | null;
+}
+
+interface GrupoDrawRow {
+  equipo: string;
+  grupo: string;
+  categoria: string;
 }
 
 type CampoConteo =
@@ -1042,6 +1052,33 @@ export default function PartidosPanel({ onCountChange }: { onCountChange: (n: nu
   const [error, setError] = React.useState("");
   const [controlId, setControlId] = React.useState<string | null>(null);
   const [deletingId, setDeletingId] = React.useState<string | null>(null);
+  const [drawRows, setDrawRows] = React.useState<GrupoDrawRow[]>([]);
+  const [catDraw, setCatDraw] = React.useState<string>("");
+
+  React.useEffect(() => {
+    (async () => {
+      const { data } = await insforge.database
+        .from("olimpiadas_grupos")
+        .select("equipo, grupo, categoria")
+        .eq("disciplina", "futbol");
+      if (Array.isArray(data)) {
+        const rows = data as GrupoDrawRow[];
+        setDrawRows(rows);
+        const cats = [...new Set(rows.map((r) => r.categoria))].filter(Boolean);
+        setCatDraw((prev) => (prev && cats.includes(prev) ? prev : (cats[0] ?? "")));
+      }
+    })();
+  }, []);
+
+  const categoriasDraw = React.useMemo(
+    () => [...new Set(drawRows.map((r) => r.categoria))].filter(Boolean),
+    [drawRows],
+  );
+  const equiposDraw = React.useMemo(
+    () => drawRows.filter((r) => r.categoria === catDraw).map((r) => r.equipo),
+    [drawRows, catDraw],
+  );
+  const haySorteo = drawRows.length > 0;
 
   async function loadPartidos() {
     setLoading(true);
@@ -1072,8 +1109,16 @@ export default function PartidosPanel({ onCountChange }: { onCountChange: (n: nu
   async function handleCrear(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (!local.trim() || !visitante.trim()) {
-      setError("Ingresa ambos nombres de equipo.");
+    if (!haySorteo) {
+      setError("Primero realiza el sorteo de grupos para poder crear partidos.");
+      return;
+    }
+    if (!local || !visitante) {
+      setError("Selecciona ambos equipos del sorteo.");
+      return;
+    }
+    if (local === visitante) {
+      setError("Un equipo no puede jugar contra sí mismo.");
       return;
     }
     const dur = getDuracionSeg();
@@ -1082,8 +1127,10 @@ export default function PartidosPanel({ onCountChange }: { onCountChange: (n: nu
       .from("partidos_olimpiadas")
       .insert([
         {
-          equipo_local: local.trim(),
-          equipo_visitante: visitante.trim(),
+          disciplina: "futbol",
+          categoria: catDraw,
+          equipo_local: local,
+          equipo_visitante: visitante,
           duracion_tiempo: dur,
           segundos_restantes: dur,
           num_tiempos: numTiempos,
@@ -1099,6 +1146,7 @@ export default function PartidosPanel({ onCountChange }: { onCountChange: (n: nu
       setCustomSec("0");
       setShowForm(false);
       await loadPartidos();
+      window.dispatchEvent(new CustomEvent("olimpiadas:resultados"));
     }
     setCreando(false);
   }
@@ -1109,7 +1157,10 @@ export default function PartidosPanel({ onCountChange }: { onCountChange: (n: nu
       .from("partidos_olimpiadas")
       .delete()
       .eq("id", id);
-    if (!err) await loadPartidos();
+    if (!err) {
+      await loadPartidos();
+      window.dispatchEvent(new CustomEvent("olimpiadas:resultados"));
+    }
     setDeletingId(null);
   }
 
@@ -1119,12 +1170,18 @@ export default function PartidosPanel({ onCountChange }: { onCountChange: (n: nu
         <p className="text-[0.7rem] text-white/40">
           Controla el marcador, tiempo y tarjetas de cada partido. El estado se guarda automáticamente.
         </p>
-        <button
-          onClick={() => setShowForm((v) => !v)}
-          className="rounded-xl border border-gold/40 bg-gold/10 px-4 py-2 text-[0.65rem] tracking-[0.18em] text-gold uppercase transition-all hover:border-gold/70 hover:bg-gold/20"
-        >
-          {showForm ? "Cancelar" : "+ Nuevo partido"}
-        </button>
+        {haySorteo ? (
+          <button
+            onClick={() => setShowForm((v) => !v)}
+            className="rounded-xl border border-gold/40 bg-gold/10 px-4 py-2 text-[0.65rem] tracking-[0.18em] text-gold uppercase transition-all hover:border-gold/70 hover:bg-gold/20"
+          >
+            {showForm ? "Cancelar" : "+ Nuevo partido"}
+          </button>
+        ) : (
+          <span className="text-[0.62rem] text-white/35 italic">
+            Realiza el sorteo en la pestaña Grupos para habilitar la creación de partidos.
+          </span>
+        )}
       </div>
 
       {showForm && (
@@ -1132,24 +1189,54 @@ export default function PartidosPanel({ onCountChange }: { onCountChange: (n: nu
           onSubmit={handleCrear}
           className="rounded-2xl border border-white/10 bg-white/3 p-5"
         >
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[0.6rem] tracking-[0.2em] text-white/40 uppercase">Categoría</label>
+              <select
+                value={catDraw}
+                onChange={(e) => {
+                  setCatDraw(e.target.value);
+                  setLocal("");
+                  setVisitante("");
+                }}
+                className="rounded-xl border border-white/10 bg-[#141414] px-4 py-2.5 text-sm text-white outline-none transition-colors focus:border-gold/50"
+              >
+                {categoriasDraw.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-[0.6rem] tracking-[0.2em] text-white/40 uppercase">Equipo local</label>
-              <input
+              <select
                 value={local}
                 onChange={(e) => setLocal(e.target.value)}
-                placeholder="Ej. Ingeniería Civil"
-                className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-white/25 outline-none transition-colors focus:border-gold/50"
-              />
+                className="rounded-xl border border-white/10 bg-[#141414] px-4 py-2.5 text-sm text-white outline-none transition-colors focus:border-gold/50"
+              >
+                <option value="">Selecciona un equipo…</option>
+                {equiposDraw.map((eq) => (
+                  <option key={eq} value={eq}>
+                    {eq}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-[0.6rem] tracking-[0.2em] text-white/40 uppercase">Equipo visitante</label>
-              <input
+              <select
                 value={visitante}
                 onChange={(e) => setVisitante(e.target.value)}
-                placeholder="Ej. Medicina"
-                className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-white/25 outline-none transition-colors focus:border-gold/50"
-              />
+                className="rounded-xl border border-white/10 bg-[#141414] px-4 py-2.5 text-sm text-white outline-none transition-colors focus:border-gold/50"
+              >
+                <option value="">Selecciona un equipo…</option>
+                {equiposDraw.map((eq) => (
+                  <option key={eq} value={eq}>
+                    {eq}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -1258,6 +1345,12 @@ export default function PartidosPanel({ onCountChange }: { onCountChange: (n: nu
                     <span className="block truncate">{p.equipo_local}</span>
                     <span className="block text-[0.6rem] text-white/25">vs</span>
                     <span className="block truncate">{p.equipo_visitante}</span>
+                    {p.grupo && (
+                      <span className="mt-1 block text-[0.55rem] tracking-[0.12em] text-gold/60 uppercase">
+                        Grupo {p.grupo}
+                        {p.fecha ? ` · Fecha ${p.fecha}` : ""}
+                      </span>
+                    )}
                   </td>
                   <td className="px-3 py-3 text-center font-[var(--font-display)] text-base text-white tabular-nums">
                     {p.goles_local} – {p.goles_visitante}
@@ -1321,6 +1414,7 @@ export default function PartidosPanel({ onCountChange }: { onCountChange: (n: nu
           onSaved={() => {
             setControlId(null);
             void loadPartidos();
+            window.dispatchEvent(new CustomEvent("olimpiadas:resultados"));
           }}
         />
       )}
