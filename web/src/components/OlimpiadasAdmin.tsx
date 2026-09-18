@@ -6,13 +6,14 @@ import { insforge } from "@/lib/insforge/browser";
 import { DISCIPLINAS, getDisciplina, type DisciplinaId } from "@/data/olimpiadas";
 import PartidosPanel from "./OlimpiadasPartidos";
 import DrawController from "./olimpiadas/DrawController";
+import CronogramaPanel from "./olimpiadas/CronogramaPanel";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
 type Row = Record<string, unknown>;
-type AdminTab = DisciplinaId | "partidos" | "grupos";
+type AdminTab = DisciplinaId | "partidos" | "grupos" | "cronograma";
 
 interface ColumnDef {
   key: string;
@@ -285,7 +286,7 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
     if (Array.isArray(partidosList)) setPartidosCount(partidosList.length);
     const { data } = await insforge.auth.getCurrentUser();
     if (data?.user) setAdminEmail(data.user.email ?? null);
-    if (tab !== "partidos" && tab !== "grupos") await fetchRows(tab);
+    if (tab !== "partidos" && tab !== "grupos" && tab !== "cronograma") await fetchRows(tab);
     setLoading(false);
   }
 
@@ -297,10 +298,10 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
     setTab(id);
     setFiltroCategoria("todos");
     setFiltroSecundaria("todos");
-    if (id !== "partidos" && id !== "grupos") await fetchRows(id);
+    if (id !== "partidos" && id !== "grupos" && id !== "cronograma") await fetchRows(id);
   }
 
-  const ALL_TABS: AdminTab[] = [...DISCIPLINAS.map((d) => d.id), "partidos", "grupos"];
+  const ALL_TABS: AdminTab[] = [...DISCIPLINAS.map((d) => d.id), "partidos", "grupos", "cronograma"];
 
   function moveDiscipline(dir: 1 | -1) {
     const idx = ALL_TABS.indexOf(tab);
@@ -319,7 +320,7 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   }
 
   async function deleteRow(row: Row) {
-    if (tab === "partidos" || tab === "grupos") return;
+    if (tab === "partidos" || tab === "grupos" || tab === "cronograma") return;
     if (!(await verifySession())) return;
     const id = row.id as string;
     if (!id) return;
@@ -338,18 +339,21 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
 
   const esPartidos = tab === "partidos";
   const esGrupos = tab === "grupos";
-  const columns = tab !== "partidos" && tab !== "grupos" ? DISCIPLINE_COLUMNS[tab] : [];
-  const cfg = tab !== "partidos" && tab !== "grupos" ? getDisciplina(tab) : null;
-  const total = tab === "partidos" ? partidosCount : tab === "grupos" ? 0 : counts[tab];
-  const tabTitulo = esPartidos ? "Partidos" : esGrupos ? "Grupos" : cfg!.label;
+  const esCronograma = tab === "cronograma";
+  const columns = !esPartidos && !esGrupos && !esCronograma ? DISCIPLINE_COLUMNS[tab as DisciplinaId] : [];
+  const cfg = !esPartidos && !esGrupos && !esCronograma ? getDisciplina(tab as DisciplinaId) : null;
+  const total = esPartidos ? partidosCount : esGrupos || esCronograma ? 0 : counts[tab as DisciplinaId];
+  const tabTitulo = esPartidos ? "Partidos" : esGrupos ? "Grupos" : esCronograma ? "Cronograma" : cfg!.label;
   const tabResumen = esPartidos
     ? `${total} partidos`
     : esGrupos
       ? "Sorteo y calendario"
-      : `${total} inscripciones en ${cfg!.label}`;
+      : esCronograma
+        ? "Próximos partidos públicos"
+        : `${total} inscripciones en ${cfg!.label}`;
 
-  const esEquipo = tab !== "partidos" && tab !== "grupos" && TEAM_DISCIPLINES.includes(tab);
-  const secKey = tab !== "partidos" && tab !== "grupos" ? SECONDARY_KEY[tab] : "";
+  const esEquipo = !esPartidos && !esGrupos && !esCronograma && TEAM_DISCIPLINES.includes(tab as DisciplinaId);
+  const secKey = !esPartidos && !esGrupos && !esCronograma ? SECONDARY_KEY[tab as DisciplinaId] : "";
   const categorias = esEquipo
     ? Array.from(new Set(rows.map((r) => String(r.categoria ?? "")).filter(Boolean)))
     : [];
@@ -441,6 +445,14 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
                   }`}>
                   Grupos
                 </button>
+                <button key="cronograma" onClick={() => switchTab("cronograma")}
+                  className={`flex min-w-max flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-4 py-2 text-[0.65rem] tracking-[0.15em] uppercase transition-all ${
+                    tab === "cronograma"
+                      ? "border border-gold/30 bg-gold/15 text-gold"
+                      : "border border-transparent text-white/40 hover:text-white/70"
+                  }`}>
+                  Cronograma
+                </button>
               </div>
             </div>
 
@@ -497,6 +509,8 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
               <PartidosPanel onCountChange={setPartidosCount} />
             ) : esGrupos ? (
               <DrawController />
+            ) : esCronograma ? (
+              <CronogramaPanel />
             ) : loading ? (
               <div className="flex h-40 items-center justify-center text-xs text-white/30">Cargando…</div>
             ) : filteredRows.length === 0 ? (

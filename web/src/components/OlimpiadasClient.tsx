@@ -401,6 +401,170 @@ function Select({
 }
 
 // ---------------------------------------------------------------------------
+// Upcoming Schedule (public-facing)
+// ---------------------------------------------------------------------------
+
+interface PartidoSchedule {
+  id: string;
+  equipo_local: string;
+  equipo_visitante: string;
+  goles_local: number;
+  goles_visitante: number;
+  estado: "pendiente" | "en_curso" | "finalizado";
+  disciplina?: string;
+  categoria?: string | null;
+  grupo?: string | null;
+  fecha?: number | null;
+}
+
+const DISCIPLINA_LABEL_PUB: Record<string, string> = {
+  futbol: "Fútbol",
+  basket: "Basket",
+  ecuavoley: "Ecuavoley",
+  ajedrez: "Ajedrez",
+  pingpong: "Ping Pong",
+};
+
+const ESTADO_COLOR: Record<string, string> = {
+  pendiente: "border-white/15 bg-white/5 text-white/35",
+  en_curso: "border-gold/40 bg-gold/10 text-gold",
+  finalizado: "border-white/15 bg-white/5 text-white/40",
+};
+
+const ESTADO_LABEL_PUB: Record<string, string> = {
+  pendiente: "Sin iniciar",
+  en_curso: "En curso",
+  finalizado: "Finalizado",
+};
+
+function UpcomingSchedule() {
+  const [matches, setMatches] = React.useState<PartidoSchedule[]>([]);
+  const [loaded, setLoaded] = React.useState(false);
+
+  const cargar = React.useCallback(async () => {
+    const { data: schRows } = await insforge.database
+      .from("olimpiadas_schedule")
+      .select("partido_id, posicion")
+      .order("posicion", { ascending: true });
+
+    if (!Array.isArray(schRows) || schRows.length === 0) {
+      setMatches([]);
+      setLoaded(true);
+      return;
+    }
+
+    const typedRows = schRows as { partido_id: string; posicion: number }[];
+    const ids = typedRows.map((r) => r.partido_id);
+
+    const { data: pData } = await insforge.database
+      .from("partidos_olimpiadas")
+      .select("*")
+      .in("id", ids);
+
+    if (Array.isArray(pData)) {
+      const pMap = new Map(
+        (pData as PartidoSchedule[]).map((p) => [p.id, p]),
+      );
+      const ordered = typedRows
+        .sort((a, b) => a.posicion - b.posicion)
+        .map((r) => pMap.get(r.partido_id))
+        .filter(Boolean) as PartidoSchedule[];
+      setMatches(ordered);
+    }
+    setLoaded(true);
+  }, []);
+
+  React.useEffect(() => {
+    void cargar();
+  }, [cargar]);
+
+  React.useEffect(() => {
+    const onSchedule = () => void cargar();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void cargar();
+    };
+    window.addEventListener("olimpiadas:schedule", onSchedule);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("olimpiadas:schedule", onSchedule);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [cargar]);
+
+  // Zero footprint if not loaded yet or schedule is empty
+  if (!loaded || matches.length === 0) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="mt-10"
+    >
+      {/* Section header */}
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <p className="text-[0.6rem] tracking-[0.3em] text-gold uppercase">Próximos Partidos</p>
+          <p className="mt-0.5 text-[0.65rem] text-white/35">Calendario del sábado</p>
+        </div>
+        <span className="flex h-7 w-7 items-center justify-center rounded-full border border-gold/25 bg-gold/8 text-[0.6rem] font-medium text-gold">
+          {matches.length}
+        </span>
+      </div>
+
+      {/* Match cards */}
+      <div className="flex flex-col gap-2">
+        {matches.map((p, idx) => (
+          <motion.div
+            key={p.id}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3, delay: idx * 0.05 }}
+            className="flex items-center gap-3 rounded-2xl border border-white/8 bg-white/3 px-4 py-3 backdrop-blur-sm"
+          >
+            {/* Order badge */}
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-[0.6rem] text-white/40 tabular-nums">
+              {idx + 1}
+            </span>
+
+            {/* Teams */}
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-white">
+                {p.equipo_local}
+                <span className="mx-2 text-white/30">vs</span>
+                {p.equipo_visitante}
+              </p>
+              <p className="mt-0.5 truncate text-[0.62rem] text-white/40">
+                {p.disciplina ? DISCIPLINA_LABEL_PUB[p.disciplina] ?? p.disciplina : ""}
+                {p.categoria ? ` · ${p.categoria}` : ""}
+                {p.grupo ? ` · Grupo ${p.grupo}` : ""}
+                {p.fecha != null ? ` · Fecha ${p.fecha}` : ""}
+              </p>
+            </div>
+
+            {/* Score (if started or finished) */}
+            {(p.estado === "en_curso" || p.estado === "finalizado") && (
+              <span className="shrink-0 font-[var(--font-display)] text-base tabular-nums text-white">
+                {p.goles_local} – {p.goles_visitante}
+              </span>
+            )}
+
+            {/* Estado chip */}
+            <span
+              className={`shrink-0 rounded-full border px-2.5 py-1 text-[0.55rem] tracking-[0.14em] uppercase ${
+                ESTADO_COLOR[p.estado] ?? ESTADO_COLOR.pendiente
+              }`}
+            >
+              {ESTADO_LABEL_PUB[p.estado] ?? p.estado}
+            </span>
+          </motion.div>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main page
 // ---------------------------------------------------------------------------
 
@@ -529,6 +693,9 @@ export default function OlimpiadasClient() {
             cerraron sus registros; aquí publicamos su calendario y sus tablas clasificatorias.
           </p>
         </div>
+
+        {/* Upcoming matches schedule */}
+        <UpcomingSchedule />
 
         {/* Discipline selector */}
         <div className="mt-10 flex flex-wrap justify-center gap-2">
