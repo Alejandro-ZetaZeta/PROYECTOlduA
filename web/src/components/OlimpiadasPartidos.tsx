@@ -292,6 +292,31 @@ function CardIcon({ color }: { color: "yellow" | "red" }) {
   );
 }
 
+function SearchIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+  );
+}
+
+function XIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
+      <path d="M18 6 6 18M6 6l12 12" />
+    </svg>
+  );
+}
+
+function normalizeSearch(text: string): string {
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
 // ---------------------------------------------------------------------------
 // Match control modal (fullscreen-capable)
 // ---------------------------------------------------------------------------
@@ -589,7 +614,7 @@ function MatchControlModal({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.2 }}
-        className="fixed inset-0 z-[70] flex flex-col bg-[#0a0a0a]"
+        className="fixed inset-0 z-70 flex flex-col bg-[#0a0a0a]"
       >
         {/* Header */}
         <div className="shrink-0 border-b border-white/8 px-4 py-2.5 sm:px-5">
@@ -653,10 +678,10 @@ function MatchControlModal({
                 <div className="flex min-h-0 flex-col justify-center rounded-2xl border border-white/10 bg-white/4 px-4 py-4 sm:px-6">
                   <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-4">
                     <div className="flex flex-col items-center gap-2">
-                      <p className="w-full truncate text-center font-[var(--font-display)] text-sm text-white">
+                      <p className="w-full truncate text-center font-(--font-display) text-sm text-white">
                         {match.equipo_local}
                       </p>
-                      <p className="font-[var(--font-display)] text-6xl text-white tabular-nums sm:text-7xl">
+                      <p className="font-(--font-display) text-6xl text-white tabular-nums sm:text-7xl">
                         {match.goles_local}
                       </p>
                       <div className="flex items-center gap-1.5">
@@ -681,10 +706,10 @@ function MatchControlModal({
                     </div>
                     <p className="text-[0.55rem] tracking-[0.18em] text-white/25 uppercase">vs</p>
                     <div className="flex flex-col items-center gap-2">
-                      <p className="w-full truncate text-center font-[var(--font-display)] text-sm text-white">
+                      <p className="w-full truncate text-center font-(--font-display) text-sm text-white">
                         {match.equipo_visitante}
                       </p>
-                      <p className="font-[var(--font-display)] text-6xl text-white tabular-nums sm:text-7xl">
+                      <p className="font-(--font-display) text-6xl text-white tabular-nums sm:text-7xl">
                         {match.goles_visitante}
                       </p>
                       <div className="flex items-center gap-1.5">
@@ -733,7 +758,7 @@ function MatchControlModal({
                     ))}
                   </div>
                   <p
-                    className={`mt-1 font-[var(--font-display)] text-6xl tabular-nums sm:text-7xl ${
+                    className={`mt-1 font-(--font-display) text-6xl tabular-nums sm:text-7xl ${
                       remaining === 0 && !running ? "animate-pulse text-red-400" : "text-white"
                     }`}
                   >
@@ -752,7 +777,7 @@ function MatchControlModal({
                     {!(remaining === 0) && (
                       <button
                         onClick={toggleTimer}
-                        className="inline-flex min-w-[110px] items-center justify-center gap-1.5 rounded-xl border border-gold/40 bg-gold/10 px-4 py-1.5 text-[0.64rem] tracking-[0.2em] text-gold uppercase transition-all hover:border-gold/70 hover:bg-gold/20"
+                        className="inline-flex min-w-27.5 items-center justify-center gap-1.5 rounded-xl border border-gold/40 bg-gold/10 px-4 py-1.5 text-[0.64rem] tracking-[0.2em] text-gold uppercase transition-all hover:border-gold/70 hover:bg-gold/20"
                       >
                         {running ? (
                           <>
@@ -849,7 +874,7 @@ function MatchControlModal({
                   ]
                 ).map((t) => (
                   <div key={t.suf} className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/3 px-4 py-2">
-                    <p className="w-0 flex-1 truncate font-[var(--font-display)] text-sm text-white">
+                    <p className="w-0 flex-1 truncate font-(--font-display) text-sm text-white">
                       {t.equipo}
                     </p>
                     <div className="flex shrink-0 items-center gap-5 sm:gap-7">
@@ -962,7 +987,7 @@ function CardCounter({
     <div className="flex flex-col items-center gap-1">
       <div className="flex items-center gap-1.5">
         <CardIcon color={color} />
-        <span className="font-[var(--font-display)] text-2xl text-white tabular-nums">{count}</span>
+        <span className="font-(--font-display) text-2xl text-white tabular-nums">{count}</span>
       </div>
       <div className="flex gap-1">
         <button
@@ -1000,7 +1025,7 @@ function PenalCounter({
   return (
     <div className="flex items-center gap-2">
       <div className="flex flex-col items-center">
-        <span className="max-w-[90px] truncate text-[0.6rem] text-white/70">{equipo}</span>
+        <span className="max-w-22.5 truncate text-[0.6rem] text-white/70">{equipo}</span>
         <div className="mt-1 flex items-center gap-1.5">
           <button
             onClick={onDec}
@@ -1010,7 +1035,7 @@ function PenalCounter({
           >
             −
           </button>
-          <span className="w-8 text-center font-[var(--font-display)] text-2xl text-white tabular-nums">
+          <span className="w-8 text-center font-(--font-display) text-2xl text-white tabular-nums">
             {count}
           </span>
           <button
@@ -1055,6 +1080,12 @@ export default function PartidosPanel({ onCountChange }: { onCountChange: (n: nu
   const [drawRows, setDrawRows] = React.useState<GrupoDrawRow[]>([]);
   const [catDraw, setCatDraw] = React.useState<string>("");
 
+  // Search & Filter state
+  const [search, setSearch] = React.useState("");
+  const [filtroEstado, setFiltroEstado] = React.useState<string>("todos");
+  const [filtroCategoria, setFiltroCategoria] = React.useState<string>("todos");
+  const [filtroGrupo, setFiltroGrupo] = React.useState<string>("todos");
+
   React.useEffect(() => {
     (async () => {
       const { data } = await insforge.database
@@ -1097,6 +1128,70 @@ export default function PartidosPanel({ onCountChange }: { onCountChange: (n: nu
   React.useEffect(() => {
     void loadPartidos();
   }, []);
+
+  const categoriasDisponibles = React.useMemo(() => {
+    const set = new Set<string>();
+    partidos.forEach((p) => {
+      if (p.categoria) set.add(p.categoria);
+    });
+    return Array.from(set);
+  }, [partidos]);
+
+  const gruposDisponibles = React.useMemo(() => {
+    const set = new Set<string>();
+    partidos.forEach((p) => {
+      if (p.grupo) set.add(p.grupo);
+    });
+    return Array.from(set).sort();
+  }, [partidos]);
+
+  const hasActiveFilters =
+    search.trim() !== "" ||
+    filtroEstado !== "todos" ||
+    filtroCategoria !== "todos" ||
+    filtroGrupo !== "todos";
+
+  function clearFilters() {
+    setSearch("");
+    setFiltroEstado("todos");
+    setFiltroCategoria("todos");
+    setFiltroGrupo("todos");
+  }
+
+  const partidosFiltrados = React.useMemo(() => {
+    const q = normalizeSearch(search);
+    return partidos.filter((p) => {
+      if (filtroEstado !== "todos" && p.estado !== filtroEstado) return false;
+      if (filtroCategoria !== "todos" && p.categoria !== filtroCategoria) return false;
+      if (filtroGrupo !== "todos" && p.grupo !== filtroGrupo) return false;
+      if (q) {
+        const local = normalizeSearch(p.equipo_local ?? "");
+        const visitante = normalizeSearch(p.equipo_visitante ?? "");
+        const cat = normalizeSearch(p.categoria ?? "");
+        const grp = normalizeSearch(p.grupo ? `grupo ${p.grupo}` : "");
+        const grpSimple = normalizeSearch(p.grupo ?? "");
+        const fch = normalizeSearch(p.fecha != null ? `fecha ${p.fecha}` : "");
+        const fchSimple = normalizeSearch(p.fecha != null ? String(p.fecha) : "");
+        const disc = normalizeSearch(p.disciplina ?? "");
+        const est = normalizeSearch(ESTADO_LABEL[p.estado] ?? p.estado);
+
+        const match =
+          local.includes(q) ||
+          visitante.includes(q) ||
+          `${local} vs ${visitante}`.includes(q) ||
+          cat.includes(q) ||
+          grp.includes(q) ||
+          grpSimple === q ||
+          fch.includes(q) ||
+          fchSimple === q ||
+          disc.includes(q) ||
+          est.includes(q);
+
+        if (!match) return false;
+      }
+      return true;
+    });
+  }, [partidos, search, filtroEstado, filtroCategoria, filtroGrupo]);
 
   function getDuracionSeg(): number {
     if (durPreset !== 0) return durPreset * 60;
@@ -1320,15 +1415,127 @@ export default function PartidosPanel({ onCountChange }: { onCountChange: (n: nu
         </form>
       )}
 
+      {/* Search & Filters Bar */}
+      {partidos.length > 0 && (
+        <div className="flex flex-col gap-3 rounded-2xl border border-white/8 bg-white/2 p-3 sm:p-4">
+          <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
+            {/* Search input */}
+            <div className="relative flex-1">
+              <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-white/35">
+                <SearchIcon />
+              </span>
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar por equipo, grupo, fecha o categoría…"
+                className="w-full rounded-xl border border-white/10 bg-[#121212] py-2 pl-9 pr-8 text-xs text-white placeholder-white/30 outline-none transition-colors focus:border-gold/50"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  aria-label="Limpiar búsqueda"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/30 transition-colors hover:text-white/70"
+                >
+                  <XIcon />
+                </button>
+              )}
+            </div>
+
+            {/* Quick dropdown filters */}
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                value={filtroEstado}
+                onChange={(e) => setFiltroEstado(e.target.value)}
+                className="rounded-xl border border-white/10 bg-[#121212] px-3 py-2 text-xs text-white outline-none transition-colors focus:border-gold/50"
+              >
+                <option value="todos">Estado: todos</option>
+                <option value="pendiente">Sin iniciar</option>
+                <option value="en_curso">En curso</option>
+                <option value="finalizado">Finalizado</option>
+              </select>
+
+              {categoriasDisponibles.length > 1 && (
+                <select
+                  value={filtroCategoria}
+                  onChange={(e) => setFiltroCategoria(e.target.value)}
+                  className="rounded-xl border border-white/10 bg-[#121212] px-3 py-2 text-xs text-white outline-none transition-colors focus:border-gold/50"
+                >
+                  <option value="todos">Categoría: todas</option>
+                  {categoriasDisponibles.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              )}
+
+              {gruposDisponibles.length > 0 && (
+                <select
+                  value={filtroGrupo}
+                  onChange={(e) => setFiltroGrupo(e.target.value)}
+                  className="rounded-xl border border-white/10 bg-[#121212] px-3 py-2 text-xs text-white outline-none transition-colors focus:border-gold/50"
+                >
+                  <option value="todos">Grupo: todos</option>
+                  {gruposDisponibles.map((g) => (
+                    <option key={g} value={g}>
+                      Grupo {g}
+                    </option>
+                  ))}
+                </select>
+              )}
+
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/50 transition-colors hover:border-gold/40 hover:text-gold"
+                >
+                  Limpiar filtros
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between text-[0.65rem] text-white/40">
+            <span>
+              Mostrando <span className="font-medium text-gold">{partidosFiltrados.length}</span> de{" "}
+              {partidos.length} {partidos.length === 1 ? "partido" : "partidos"}
+            </span>
+            {hasActiveFilters && partidosFiltrados.length < partidos.length && (
+              <span className="text-white/30 italic">Filtros aplicados</span>
+            )}
+          </div>
+        </div>
+      )}
+
       {loading ? (
         <div className="flex h-40 items-center justify-center text-xs text-white/30">Cargando partidos…</div>
       ) : partidos.length === 0 ? (
         <div className="flex h-40 items-center justify-center rounded-2xl border border-dashed border-white/15 bg-white/2 text-xs text-white/30 italic">
           Aún no hay partidos. Crea uno para empezar a controlarlo.
         </div>
+      ) : partidosFiltrados.length === 0 ? (
+        <div className="flex flex-col items-center justify-center gap-2.5 rounded-2xl border border-dashed border-white/15 bg-white/2 py-10 px-4 text-center">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/40">
+            <SearchIcon />
+          </div>
+          <p className="text-xs font-medium text-white/70">No se encontraron partidos</p>
+          <p className="max-w-xs text-[0.65rem] text-white/40">
+            No hay partidos que coincidan con los criterios de búsqueda actuales.
+          </p>
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="mt-1 rounded-xl border border-gold/30 bg-gold/10 px-3.5 py-1.5 text-[0.62rem] tracking-[0.15em] text-gold uppercase transition-colors hover:bg-gold/20"
+          >
+            Restablecer filtros
+          </button>
+        </div>
       ) : (
         <div className="w-full overflow-x-auto rounded-2xl border border-white/8">
-          <table className="w-full min-w-[640px] border-collapse text-sm">
+          <table className="w-full min-w-160 border-collapse text-sm">
             <thead>
               <tr className="border-b border-white/8">
                 {["Partido", "Marcador", "Tiempo", "Estado", "Tarjetas", ""].map((h, i) => (
@@ -1339,9 +1546,9 @@ export default function PartidosPanel({ onCountChange }: { onCountChange: (n: nu
               </tr>
             </thead>
             <tbody>
-              {partidos.map((p) => (
+              {partidosFiltrados.map((p) => (
                 <tr key={p.id} className="border-b border-white/4 last:border-0 hover:bg-white/2">
-                  <td className="max-w-[220px] px-3 py-3 text-center text-xs text-white">
+                  <td className="max-w-55 px-3 py-3 text-center text-xs text-white">
                     <span className="block truncate">{p.equipo_local}</span>
                     <span className="block text-[0.6rem] text-white/25">vs</span>
                     <span className="block truncate">{p.equipo_visitante}</span>
@@ -1352,7 +1559,7 @@ export default function PartidosPanel({ onCountChange }: { onCountChange: (n: nu
                       </span>
                     )}
                   </td>
-                  <td className="px-3 py-3 text-center font-[var(--font-display)] text-base text-white tabular-nums">
+                  <td className="px-3 py-3 text-center font-(--font-display) text-base text-white tabular-nums">
                     {p.goles_local} – {p.goles_visitante}
                     {p.penales_local != null && (
                       <span className="mt-0.5 block text-[0.55rem] tracking-[0.12em] text-white/35 uppercase">

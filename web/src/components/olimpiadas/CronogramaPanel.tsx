@@ -67,6 +67,23 @@ function SaveIcon() {
   );
 }
 
+function SearchIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+  );
+}
+
+function normalizeSearch(text: string): string {
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -110,6 +127,12 @@ export default function CronogramaPanel() {
   const [saving, setSaving] = React.useState(false);
   const [savedAt, setSavedAt] = React.useState<Date | null>(null);
   const [saveError, setSaveError] = React.useState("");
+
+  // Search and filter state
+  const [searchDisponibles, setSearchDisponibles] = React.useState("");
+  const [filtroEstadoDisp, setFiltroEstadoDisp] = React.useState("todos");
+  const [filtroCatDisp, setFiltroCatDisp] = React.useState("todos");
+  const [searchSchedule, setSearchSchedule] = React.useState("");
 
   const scheduledIds = React.useMemo(
     () => new Set(schedule.map((p) => p.id)),
@@ -164,6 +187,75 @@ export default function CronogramaPanel() {
     void loadSchedule();
   }, []);
 
+  const categoriasDisponibles = React.useMemo(() => {
+    const set = new Set<string>();
+    partidos.forEach((p) => {
+      if (p.categoria) set.add(p.categoria);
+    });
+    return Array.from(set);
+  }, [partidos]);
+
+  const partidosDisponiblesFiltrados = React.useMemo(() => {
+    const q = normalizeSearch(searchDisponibles);
+    return partidos.filter((p) => {
+      if (filtroEstadoDisp !== "todos" && p.estado !== filtroEstadoDisp) return false;
+      if (filtroCatDisp !== "todos" && p.categoria !== filtroCatDisp) return false;
+      if (q) {
+        const local = normalizeSearch(p.equipo_local ?? "");
+        const visitante = normalizeSearch(p.equipo_visitante ?? "");
+        const cat = normalizeSearch(p.categoria ?? "");
+        const grp = normalizeSearch(p.grupo ? `grupo ${p.grupo}` : "");
+        const grpSimple = normalizeSearch(p.grupo ?? "");
+        const fch = normalizeSearch(p.fecha != null ? `fecha ${p.fecha}` : "");
+        const fchSimple = normalizeSearch(p.fecha != null ? String(p.fecha) : "");
+        const disc = normalizeSearch(p.disciplina ? (DISCIPLINA_LABEL[p.disciplina] ?? p.disciplina) : "");
+        const est = normalizeSearch(ESTADO_LABEL[p.estado] ?? p.estado);
+
+        const match =
+          local.includes(q) ||
+          visitante.includes(q) ||
+          `${local} vs ${visitante}`.includes(q) ||
+          cat.includes(q) ||
+          grp.includes(q) ||
+          grpSimple === q ||
+          fch.includes(q) ||
+          fchSimple === q ||
+          disc.includes(q) ||
+          est.includes(q);
+
+        if (!match) return false;
+      }
+      return true;
+    });
+  }, [partidos, searchDisponibles, filtroEstadoDisp, filtroCatDisp]);
+
+  const scheduleFiltrado = React.useMemo(() => {
+    const q = normalizeSearch(searchSchedule);
+    if (!q) return schedule;
+    return schedule.filter((p) => {
+      const local = normalizeSearch(p.equipo_local ?? "");
+      const visitante = normalizeSearch(p.equipo_visitante ?? "");
+      const cat = normalizeSearch(p.categoria ?? "");
+      const grp = normalizeSearch(p.grupo ? `grupo ${p.grupo}` : "");
+      const grpSimple = normalizeSearch(p.grupo ?? "");
+      const fch = normalizeSearch(p.fecha != null ? `fecha ${p.fecha}` : "");
+      const disc = normalizeSearch(p.disciplina ? (DISCIPLINA_LABEL[p.disciplina] ?? p.disciplina) : "");
+      const est = normalizeSearch(ESTADO_LABEL[p.estado] ?? p.estado);
+
+      return (
+        local.includes(q) ||
+        visitante.includes(q) ||
+        `${local} vs ${visitante}`.includes(q) ||
+        cat.includes(q) ||
+        grp.includes(q) ||
+        grpSimple === q ||
+        fch.includes(q) ||
+        disc.includes(q) ||
+        est.includes(q)
+      );
+    });
+  }, [schedule, searchSchedule]);
+
   function addToSchedule(p: PartidoOlimpiadas) {
     if (scheduledIds.has(p.id)) return;
     setSchedule((prev) => [...prev, p]);
@@ -174,7 +266,7 @@ export default function CronogramaPanel() {
   }
 
   function moveUp(idx: number) {
-    if (idx === 0) return;
+    if (idx <= 0) return;
     setSchedule((prev) => {
       const next = [...prev];
       [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
@@ -230,6 +322,10 @@ export default function CronogramaPanel() {
   }
 
   const loading = loadingPartidos || loadingSchedule;
+  const hasActiveDispFilters =
+    searchDisponibles.trim() !== "" ||
+    filtroEstadoDisp !== "todos" ||
+    filtroCatDisp !== "todos";
 
   return (
     <div className="flex flex-col gap-5">
@@ -266,17 +362,111 @@ export default function CronogramaPanel() {
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
           {/* LEFT — Available matches */}
-          <div className="flex flex-col gap-2">
-            <p className="text-[0.6rem] tracking-[0.24em] text-white/35 uppercase">
-              Partidos disponibles ({partidos.length})
-            </p>
+          <div className="flex flex-col gap-2.5">
+            <div className="flex items-center justify-between">
+              <p className="text-[0.6rem] tracking-[0.24em] text-white/35 uppercase">
+                Partidos disponibles ({partidos.length})
+              </p>
+              {hasActiveDispFilters && (
+                <span className="text-[0.6rem] text-gold">
+                  {partidosDisponiblesFiltrados.length} encontrados
+                </span>
+              )}
+            </div>
+
+            {/* Search & Filters */}
+            {partidos.length > 0 && (
+              <div className="flex flex-col gap-2">
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-white/35">
+                    <SearchIcon />
+                  </span>
+                  <input
+                    type="text"
+                    value={searchDisponibles}
+                    onChange={(e) => setSearchDisponibles(e.target.value)}
+                    placeholder="Buscar equipo, grupo, categoría…"
+                    className="w-full rounded-xl border border-white/10 bg-[#121212] py-1.5 pl-8 pr-7 text-xs text-white placeholder-white/30 outline-none transition-colors focus:border-gold/50"
+                  />
+                  {searchDisponibles && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchDisponibles("")}
+                      aria-label="Limpiar búsqueda"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 transition-colors hover:text-white/70"
+                    >
+                      <XIcon />
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <select
+                    value={filtroEstadoDisp}
+                    onChange={(e) => setFiltroEstadoDisp(e.target.value)}
+                    className="rounded-lg border border-white/10 bg-[#121212] px-2.5 py-1 text-[0.65rem] text-white outline-none transition-colors focus:border-gold/50"
+                  >
+                    <option value="todos">Estado: todos</option>
+                    <option value="pendiente">Sin iniciar</option>
+                    <option value="en_curso">En curso</option>
+                    <option value="finalizado">Finalizado</option>
+                  </select>
+
+                  {categoriasDisponibles.length > 1 && (
+                    <select
+                      value={filtroCatDisp}
+                      onChange={(e) => setFiltroCatDisp(e.target.value)}
+                      className="rounded-lg border border-white/10 bg-[#121212] px-2.5 py-1 text-[0.65rem] text-white outline-none transition-colors focus:border-gold/50"
+                    >
+                      <option value="todos">Categoría: todas</option>
+                      {categoriasDisponibles.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+
+                  {hasActiveDispFilters && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearchDisponibles("");
+                        setFiltroEstadoDisp("todos");
+                        setFiltroCatDisp("todos");
+                      }}
+                      className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-[0.62rem] text-white/50 transition-colors hover:border-gold/40 hover:text-gold"
+                    >
+                      Limpiar
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
             {partidos.length === 0 ? (
               <div className="flex h-24 items-center justify-center rounded-2xl border border-dashed border-white/15 text-xs text-white/30 italic">
                 No hay partidos creados aún.
               </div>
+            ) : partidosDisponiblesFiltrados.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-white/15 bg-white/2 p-6 text-center">
+                <p className="text-xs text-white/60">No se encontraron partidos disponibles</p>
+                <p className="text-[0.65rem] text-white/40">Prueba ajustando el texto o los filtros de búsqueda.</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchDisponibles("");
+                    setFiltroEstadoDisp("todos");
+                    setFiltroCatDisp("todos");
+                  }}
+                  className="mt-1 rounded-lg border border-gold/30 bg-gold/10 px-3 py-1 text-[0.62rem] text-gold transition-colors hover:bg-gold/20"
+                >
+                  Restablecer
+                </button>
+              </div>
             ) : (
-              <div className="flex max-h-[520px] flex-col gap-1.5 overflow-y-auto rounded-2xl border border-white/8 p-3">
-                {partidos.map((p) => {
+              <div className="flex max-h-130 flex-col gap-1.5 overflow-y-auto rounded-2xl border border-white/8 p-3">
+                {partidosDisponiblesFiltrados.map((p) => {
                   const alreadyIn = scheduledIds.has(p.id);
                   return (
                     <button
@@ -319,61 +509,112 @@ export default function CronogramaPanel() {
           </div>
 
           {/* RIGHT — Schedule */}
-          <div className="flex flex-col gap-2">
-            <p className="text-[0.6rem] tracking-[0.24em] text-white/35 uppercase">
-              Cronograma público ({schedule.length})
-            </p>
+          <div className="flex flex-col gap-2.5">
+            <div className="flex items-center justify-between">
+              <p className="text-[0.6rem] tracking-[0.24em] text-white/35 uppercase">
+                Cronograma público ({schedule.length})
+              </p>
+              {searchSchedule && (
+                <span className="text-[0.6rem] text-gold">
+                  {scheduleFiltrado.length} encontrados
+                </span>
+              )}
+            </div>
+
+            {/* Filter input for schedule */}
+            {schedule.length > 0 && (
+              <div className="relative">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-white/35">
+                  <SearchIcon />
+                </span>
+                <input
+                  type="text"
+                  value={searchSchedule}
+                  onChange={(e) => setSearchSchedule(e.target.value)}
+                  placeholder="Filtrar cronograma público…"
+                  className="w-full rounded-xl border border-white/10 bg-[#121212] py-1.5 pl-8 pr-7 text-xs text-white placeholder-white/30 outline-none transition-colors focus:border-gold/50"
+                />
+                {searchSchedule && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchSchedule("")}
+                    aria-label="Limpiar búsqueda"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 transition-colors hover:text-white/70"
+                  >
+                    <XIcon />
+                  </button>
+                )}
+              </div>
+            )}
+
             {schedule.length === 0 ? (
               <div className="flex h-24 items-center justify-center rounded-2xl border border-dashed border-white/15 text-xs text-white/30 italic">
                 Agrega partidos desde la lista de la izquierda.
               </div>
+            ) : scheduleFiltrado.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-white/15 bg-white/2 p-6 text-center">
+                <p className="text-xs text-white/60">No se encontraron partidos en el cronograma</p>
+                <button
+                  type="button"
+                  onClick={() => setSearchSchedule("")}
+                  className="mt-1 rounded-lg border border-gold/30 bg-gold/10 px-3 py-1 text-[0.62rem] text-gold transition-colors hover:bg-gold/20"
+                >
+                  Mostrar todos
+                </button>
+              </div>
             ) : (
-              <div className="flex max-h-[520px] flex-col gap-1.5 overflow-y-auto rounded-2xl border border-white/8 p-3">
+              <div className="flex max-h-130 flex-col gap-1.5 overflow-y-auto rounded-2xl border border-white/8 p-3">
                 <AnimatePresence initial={false}>
-                  {schedule.map((p, idx) => (
-                    <motion.div
-                      key={p.id}
-                      layout
-                      initial={{ opacity: 0, y: -8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, x: 20 }}
-                      transition={{ duration: 0.18 }}
-                      className="flex items-center gap-2 rounded-xl border border-gold/20 bg-gold/8 px-3 py-2.5"
-                    >
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-gold/30 bg-gold/15 text-[0.6rem] font-medium text-gold tabular-nums">
-                        {idx + 1}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-xs text-white">{partidoLabel(p)}</p>
-                        <p className="mt-0.5 truncate text-[0.6rem] text-white/40">{partidoBadge(p)}</p>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-1">
-                        <button
-                          onClick={() => moveUp(idx)}
-                          disabled={idx === 0}
-                          aria-label="Subir"
-                          className="flex h-6 w-6 items-center justify-center rounded-lg border border-white/10 bg-white/3 text-white/50 transition-colors hover:border-gold/40 hover:text-gold disabled:cursor-not-allowed disabled:opacity-25"
+                  {scheduleFiltrado.map((p) => {
+                    const origIdx = schedule.findIndex((item) => item.id === p.id);
+                    return (
+                      <motion.div
+                        key={p.id}
+                        layout
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        transition={{ duration: 0.18 }}
+                        className="flex items-center gap-2 rounded-xl border border-gold/20 bg-gold/8 px-3 py-2.5"
+                      >
+                        <span
+                          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-gold/30 bg-gold/15 text-[0.6rem] font-medium text-gold tabular-nums"
+                          title={`Posición #${origIdx + 1}`}
                         >
-                          <ChevronUpIcon />
-                        </button>
-                        <button
-                          onClick={() => moveDown(idx)}
-                          disabled={idx === schedule.length - 1}
-                          aria-label="Bajar"
-                          className="flex h-6 w-6 items-center justify-center rounded-lg border border-white/10 bg-white/3 text-white/50 transition-colors hover:border-gold/40 hover:text-gold disabled:cursor-not-allowed disabled:opacity-25"
-                        >
-                          <ChevronDownIcon />
-                        </button>
-                        <button
-                          onClick={() => removeFromSchedule(p.id)}
-                          aria-label="Quitar del cronograma"
-                          className="flex h-6 w-6 items-center justify-center rounded-lg border border-white/10 bg-white/3 text-white/40 transition-colors hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-400"
-                        >
-                          <XIcon />
-                        </button>
-                      </div>
-                    </motion.div>
-                  ))}
+                          {origIdx + 1}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-xs text-white">{partidoLabel(p)}</p>
+                          <p className="mt-0.5 truncate text-[0.6rem] text-white/40">{partidoBadge(p)}</p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-1">
+                          <button
+                            onClick={() => moveUp(origIdx)}
+                            disabled={origIdx <= 0}
+                            aria-label="Subir"
+                            className="flex h-6 w-6 items-center justify-center rounded-lg border border-white/10 bg-white/3 text-white/50 transition-colors hover:border-gold/40 hover:text-gold disabled:cursor-not-allowed disabled:opacity-25"
+                          >
+                            <ChevronUpIcon />
+                          </button>
+                          <button
+                            onClick={() => moveDown(origIdx)}
+                            disabled={origIdx >= schedule.length - 1}
+                            aria-label="Bajar"
+                            className="flex h-6 w-6 items-center justify-center rounded-lg border border-white/10 bg-white/3 text-white/50 transition-colors hover:border-gold/40 hover:text-gold disabled:cursor-not-allowed disabled:opacity-25"
+                          >
+                            <ChevronDownIcon />
+                          </button>
+                          <button
+                            onClick={() => removeFromSchedule(p.id)}
+                            aria-label="Quitar del cronograma"
+                            className="flex h-6 w-6 items-center justify-center rounded-lg border border-white/10 bg-white/3 text-white/40 transition-colors hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-400"
+                          >
+                            <XIcon />
+                          </button>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
                 </AnimatePresence>
               </div>
             )}

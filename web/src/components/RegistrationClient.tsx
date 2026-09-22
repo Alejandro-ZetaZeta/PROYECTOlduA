@@ -413,7 +413,7 @@ function LoginModal({ open, onClose, onSuccess }: { open: boolean; onClose: () =
             onClick={(e) => e.stopPropagation()}
           >
             <p className="text-[0.6rem] tracking-[0.3em] text-gold">ADMINISTRACIÓN</p>
-            <h2 className="mt-2 font-[var(--font-display)] text-xl tracking-tight text-white">Acceso restringido</h2>
+            <h2 className="mt-2 font-(--font-display) text-xl tracking-tight text-white">Acceso restringido</h2>
             <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
                 <label className="text-[0.7rem] tracking-[0.2em] text-white/40 uppercase">Correo</label>
@@ -1406,7 +1406,7 @@ function AdminPanel({ open, onClose, onApprovalChange, equipos, finalizado, onFi
                 <div className="flex h-40 items-center justify-center text-xs text-white/30 italic">Sin inscripciones aún.</div>
               ) : (
                 <div className="w-full overflow-x-auto rounded-2xl border border-white/8">
-                  <table className="w-full min-w-[660px] border-collapse text-sm">
+                  <table className="w-full min-w-165 border-collapse text-sm">
                     <thead>
                       <tr className="border-b border-white/8">
                         {["#", "Equipo", "Cédula", "WhatsApp", "Carrera", "Nivel", "Categ.", "Estado", "", ""].map((h, i) => (
@@ -1636,7 +1636,7 @@ export default function RegistroTorneoPage() {
         {/* Header */}
         <div className="mt-10 text-center">
           <p className="text-[0.65rem] tracking-[0.32em] text-gold">TORNEO RELÁMPAGO DE FÚTBOL · 13 DE JUNIO</p>
-          <h1 className="mt-4 font-[var(--font-display)] text-3xl tracking-tight text-white sm:text-4xl">
+          <h1 className="mt-4 font-(--font-display) text-3xl tracking-tight text-white sm:text-4xl">
             Inscripción de equipos
           </h1>
           <p className="mx-auto mt-4 max-w-md text-sm leading-[1.85] text-white/45">
@@ -1735,10 +1735,10 @@ export default function RegistroTorneoPage() {
                           if (isBye) {
                             return (
                               <div key={p.id} className="flex items-center justify-between p-4 rounded-2xl border border-white/4 bg-white/1 text-center opacity-70">
-                                <span className="text-xs font-semibold text-white/90 flex-1 text-right pr-4 break-words">{p.equipo_local}</span>
-                                <div className="flex flex-col items-center shrink-0 min-w-[80px]">
+                                <span className="text-xs font-semibold text-white/90 flex-1 text-right pr-4 wrap-break-word">{p.equipo_local}</span>
+                                <div className="flex flex-col items-center shrink-0 min-w-20">
                                   {p.horario && (
-                                    <span className="text-[0.55rem] tracking-[0.1em] text-white/45 mb-1 bg-white/5 px-2 py-0.5 rounded">
+                                    <span className="text-[0.55rem] tracking-widest text-white/45 mb-1 bg-white/5 px-2 py-0.5 rounded">
                                       {p.horario}
                                     </span>
                                   )}
@@ -1750,10 +1750,10 @@ export default function RegistroTorneoPage() {
                           }
                           return (
                             <div key={p.id} className="flex items-center justify-between p-4 rounded-2xl border border-white/8 bg-white/2 hover:border-gold/30 transition-all shadow-md">
-                              <span className="text-xs font-semibold text-white/90 flex-1 text-right pr-4 break-words">{p.equipo_local}</span>
-                              <div className="flex flex-col items-center shrink-0 min-w-[80px]">
+                              <span className="text-xs font-semibold text-white/90 flex-1 text-right pr-4 wrap-break-word">{p.equipo_local}</span>
+                              <div className="flex flex-col items-center shrink-0 min-w-20">
                                 {p.horario && (
-                                  <span className="text-[0.55rem] tracking-[0.1em] text-white/45 mb-1 bg-white/5 px-2 py-0.5 rounded">
+                                  <span className="text-[0.55rem] tracking-widest text-white/45 mb-1 bg-white/5 px-2 py-0.5 rounded">
                                     {p.horario}
                                   </span>
                                 )}
@@ -1761,12 +1761,12 @@ export default function RegistroTorneoPage() {
                                   {p.goles_local} — {p.goles_visitante}
                                 </span>
                                 {p.penales_local !== null && p.penales_visitante !== null && (
-                                  <span className="text-[0.55rem] tracking-[0.1em] text-amber-400 mt-0.5">
+                                  <span className="text-[0.55rem] tracking-widest text-amber-400 mt-0.5">
                                     (Penales: {p.penales_local} — {p.penales_visitante})
                                   </span>
                                 )}
                               </div>
-                              <span className="text-xs font-semibold text-white/90 flex-1 text-left pl-4 break-words">{p.equipo_visitante}</span>
+                              <span className="text-xs font-semibold text-white/90 flex-1 text-left pl-4 wrap-break-word">{p.equipo_visitante}</span>
                             </div>
                           );
                         })}

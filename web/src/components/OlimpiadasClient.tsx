@@ -513,50 +513,97 @@ function UpcomingSchedule() {
       </div>
 
       {/* Match cards */}
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2.5">
         {matches.map((p, idx) => (
           <motion.div
             key={p.id}
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.3, delay: idx * 0.05 }}
-            className="flex items-center gap-3 rounded-2xl border border-white/8 bg-white/3 px-4 py-3 backdrop-blur-sm"
+            className="rounded-2xl border border-white/8 bg-white/3 p-3.5 backdrop-blur-sm sm:px-4 sm:py-3"
           >
-            {/* Order badge */}
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-[0.6rem] text-white/40 tabular-nums">
-              {idx + 1}
-            </span>
+            {/* Mobile layout (< sm) */}
+            <div className="flex flex-col gap-2.5 sm:hidden">
+              {/* Header bar: Badge + Meta + Score + Estado */}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-[0.6rem] text-white/40 tabular-nums">
+                    {idx + 1}
+                  </span>
+                  <p className="truncate text-[0.62rem] text-white/45">
+                    {p.disciplina ? DISCIPLINA_LABEL_PUB[p.disciplina] ?? p.disciplina : ""}
+                    {p.categoria ? ` · ${p.categoria}` : ""}
+                    {p.grupo ? ` · Grupo ${p.grupo}` : ""}
+                    {p.fecha != null ? ` · Fecha ${p.fecha}` : ""}
+                  </p>
+                </div>
 
-            {/* Teams */}
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-white">
-                {p.equipo_local}
-                <span className="mx-2 text-white/30">vs</span>
-                {p.equipo_visitante}
-              </p>
-              <p className="mt-0.5 truncate text-[0.62rem] text-white/40">
-                {p.disciplina ? DISCIPLINA_LABEL_PUB[p.disciplina] ?? p.disciplina : ""}
-                {p.categoria ? ` · ${p.categoria}` : ""}
-                {p.grupo ? ` · Grupo ${p.grupo}` : ""}
-                {p.fecha != null ? ` · Fecha ${p.fecha}` : ""}
-              </p>
+                <div className="flex shrink-0 items-center gap-2">
+                  {(p.estado === "en_curso" || p.estado === "finalizado") && (
+                    <span className="font-(--font-display) text-sm tabular-nums text-white">
+                      {p.goles_local} – {p.goles_visitante}
+                    </span>
+                  )}
+                  <span
+                    className={`rounded-full border px-2 py-0.5 text-[0.52rem] tracking-[0.14em] uppercase ${
+                      ESTADO_COLOR[p.estado] ?? ESTADO_COLOR.pendiente
+                    }`}
+                  >
+                    {ESTADO_LABEL_PUB[p.estado] ?? p.estado}
+                  </span>
+                </div>
+              </div>
+
+              {/* 3 rows for teams on mobile: Team 1 -> vs -> Team 2 */}
+              <div className="flex flex-col items-center gap-1 rounded-xl border border-white/4 bg-white/2 px-3 py-2.5 text-center">
+                <p className="w-full truncate text-center text-sm font-medium text-white">{p.equipo_local}</p>
+                <div className="flex w-full items-center justify-center gap-2 my-0.5">
+                  <div className="h-px flex-1 bg-white/8" />
+                  <span className="text-[0.6rem] font-bold tracking-widest text-gold/70 uppercase">vs</span>
+                  <div className="h-px flex-1 bg-white/8" />
+                </div>
+                <p className="w-full truncate text-center text-sm font-medium text-white">{p.equipo_visitante}</p>
+              </div>
             </div>
 
-            {/* Score (if started or finished) */}
-            {(p.estado === "en_curso" || p.estado === "finalizado") && (
-              <span className="shrink-0 font-[var(--font-display)] text-base tabular-nums text-white">
-                {p.goles_local} – {p.goles_visitante}
+            {/* Desktop layout (>= sm) */}
+            <div className="hidden sm:flex sm:items-center sm:gap-3">
+              {/* Order badge */}
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-[0.6rem] text-white/40 tabular-nums">
+                {idx + 1}
               </span>
-            )}
 
-            {/* Estado chip */}
-            <span
-              className={`shrink-0 rounded-full border px-2.5 py-1 text-[0.55rem] tracking-[0.14em] uppercase ${
-                ESTADO_COLOR[p.estado] ?? ESTADO_COLOR.pendiente
-              }`}
-            >
-              {ESTADO_LABEL_PUB[p.estado] ?? p.estado}
-            </span>
+              {/* Teams & Meta */}
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-white">
+                  {p.equipo_local}
+                  <span className="mx-2 text-white/30">vs</span>
+                  {p.equipo_visitante}
+                </p>
+                <p className="mt-0.5 truncate text-[0.62rem] text-white/40">
+                  {p.disciplina ? DISCIPLINA_LABEL_PUB[p.disciplina] ?? p.disciplina : ""}
+                  {p.categoria ? ` · ${p.categoria}` : ""}
+                  {p.grupo ? ` · Grupo ${p.grupo}` : ""}
+                  {p.fecha != null ? ` · Fecha ${p.fecha}` : ""}
+                </p>
+              </div>
+
+              {/* Score (if started or finished) */}
+              {(p.estado === "en_curso" || p.estado === "finalizado") && (
+                <span className="shrink-0 font-(--font-display) text-base tabular-nums text-white">
+                  {p.goles_local} – {p.goles_visitante}
+                </span>
+              )}
+
+              {/* Estado chip */}
+              <span
+                className={`shrink-0 rounded-full border px-2.5 py-1 text-[0.55rem] tracking-[0.14em] uppercase ${
+                  ESTADO_COLOR[p.estado] ?? ESTADO_COLOR.pendiente
+                }`}
+              >
+                {ESTADO_LABEL_PUB[p.estado] ?? p.estado}
+              </span>
+            </div>
           </motion.div>
         ))}
       </div>
@@ -685,7 +732,7 @@ export default function OlimpiadasClient() {
         {/* Header */}
         <div className="mt-10 text-center">
           <p className="text-[0.65rem] tracking-[0.32em] text-gold">OLIMPIADAS ULEAM CHONE · 2026</p>
-          <h1 className="mt-4 font-[var(--font-display)] text-3xl tracking-tight text-white sm:text-4xl">
+          <h1 className="mt-4 font-(--font-display) text-3xl tracking-tight text-white sm:text-4xl">
             Elige tu disciplina
           </h1>
           <p className="mx-auto mt-4 max-w-md text-sm leading-[1.85] text-white/45">
