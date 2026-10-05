@@ -410,6 +410,8 @@ interface PartidoSchedule {
   equipo_visitante: string;
   goles_local: number;
   goles_visitante: number;
+  penales_local?: number | null;
+  penales_visitante?: number | null;
   estado: "pendiente" | "en_curso" | "finalizado";
   disciplina?: string;
   categoria?: string | null;
@@ -425,17 +427,56 @@ const DISCIPLINA_LABEL_PUB: Record<string, string> = {
   pingpong: "Ping Pong",
 };
 
-const ESTADO_COLOR: Record<string, string> = {
-  pendiente: "border-white/15 bg-white/5 text-white/35",
-  en_curso: "border-gold/40 bg-gold/10 text-gold",
-  finalizado: "border-white/15 bg-white/5 text-white/40",
-};
+function TrophyMiniIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className ?? "h-3.5 w-3.5"}
+    >
+      <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+      <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+      <path d="M4 22h16" />
+      <path d="M10 14.66V17c0 .55-.45 1-1 1H8v2h8v-2h-1c-.55 0-1-.45-1-1v-2.34" />
+      <path d="M6 4h12a2 2 0 0 1 2 2v3a6 6 0 0 1-6 6h0a6 6 0 0 1-6-6V6a2 2 0 0 1 2-2Z" />
+    </svg>
+  );
+}
 
-const ESTADO_LABEL_PUB: Record<string, string> = {
-  pendiente: "Sin iniciar",
-  en_curso: "En curso",
-  finalizado: "Finalizado",
-};
+function getMatchOutcome(p: PartidoSchedule) {
+  const isFinished = p.estado === "finalizado";
+  const isLive = p.estado === "en_curso";
+  const isStarted = isLive || isFinished;
+
+  let localWon = false;
+  let visitanteWon = false;
+  let isTie = false;
+
+  if (isFinished) {
+    if (p.goles_local > p.goles_visitante) {
+      localWon = true;
+    } else if (p.goles_visitante > p.goles_local) {
+      visitanteWon = true;
+    } else if (p.penales_local != null && p.penales_visitante != null) {
+      if (p.penales_local > p.penales_visitante) {
+        localWon = true;
+      } else if (p.penales_visitante > p.penales_local) {
+        visitanteWon = true;
+      } else {
+        isTie = true;
+      }
+    } else {
+      isTie = true;
+    }
+  }
+
+  return { isFinished, isLive, isStarted, localWon, visitanteWon, isTie };
+}
 
 function UpcomingSchedule() {
   const [matches, setMatches] = React.useState<PartidoSchedule[]>([]);
@@ -514,98 +555,277 @@ function UpcomingSchedule() {
 
       {/* Match cards */}
       <div className="flex flex-col gap-2.5">
-        {matches.map((p, idx) => (
-          <motion.div
-            key={p.id}
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.3, delay: idx * 0.05 }}
-            className="rounded-2xl border border-white/8 bg-white/3 p-3.5 backdrop-blur-sm sm:px-4 sm:py-3"
-          >
-            {/* Mobile layout (< sm) */}
-            <div className="flex flex-col gap-2.5 sm:hidden">
-              {/* Header bar: Badge + Meta + Score + Estado */}
-              <div className="flex items-center justify-between gap-2">
+        {matches.map((p, idx) => {
+          const outcome = getMatchOutcome(p);
+
+          return (
+            <motion.div
+              key={p.id}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.3, delay: idx * 0.05 }}
+              className="rounded-2xl border border-white/8 bg-white/3 p-3.5 backdrop-blur-sm transition-colors hover:border-white/15 sm:p-4"
+            >
+              {/* Card Meta & Status Header */}
+              <div className="mb-3 flex items-center justify-between gap-2 border-b border-white/5 pb-2.5">
                 <div className="flex min-w-0 items-center gap-2">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-[0.6rem] text-white/40 tabular-nums">
-                    {idx + 1}
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-[0.58rem] font-medium text-white/50 tabular-nums">
+                    #{idx + 1}
                   </span>
-                  <p className="truncate text-[0.62rem] text-white/45">
-                    {p.disciplina ? DISCIPLINA_LABEL_PUB[p.disciplina] ?? p.disciplina : ""}
+                  <p className="truncate text-[0.65rem] font-medium text-white/50">
+                    {p.disciplina ? (DISCIPLINA_LABEL_PUB[p.disciplina] ?? p.disciplina) : "Partido"}
                     {p.categoria ? ` · ${p.categoria}` : ""}
                     {p.grupo ? ` · Grupo ${p.grupo}` : ""}
                     {p.fecha != null ? ` · Fecha ${p.fecha}` : ""}
                   </p>
                 </div>
 
-                <div className="flex shrink-0 items-center gap-2">
-                  {(p.estado === "en_curso" || p.estado === "finalizado") && (
-                    <span className="font-(--font-display) text-sm tabular-nums text-white">
-                      {p.goles_local} – {p.goles_visitante}
+                {/* Status chip */}
+                <div className="shrink-0">
+                  {outcome.isLive ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-0.5 text-[0.55rem] font-bold tracking-wider text-gold uppercase shadow-[0_0_10px_rgba(212,175,55,0.15)]">
+                      <span className="relative flex h-1.5 w-1.5">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-gold opacity-75"></span>
+                        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-gold"></span>
+                      </span>
+                      En Curso
+                    </span>
+                  ) : outcome.isFinished ? (
+                    <span className="rounded-full border border-white/12 bg-white/5 px-2.5 py-0.5 text-[0.55rem] font-medium tracking-wider text-white/50 uppercase">
+                      Finalizado
+                    </span>
+                  ) : (
+                    <span className="rounded-full border border-white/8 bg-white/3 px-2.5 py-0.5 text-[0.55rem] font-medium tracking-wider text-white/35 uppercase">
+                      Sin iniciar
                     </span>
                   )}
-                  <span
-                    className={`rounded-full border px-2 py-0.5 text-[0.52rem] tracking-[0.14em] uppercase ${
-                      ESTADO_COLOR[p.estado] ?? ESTADO_COLOR.pendiente
-                    }`}
-                  >
-                    {ESTADO_LABEL_PUB[p.estado] ?? p.estado}
+                </div>
+              </div>
+
+              {/* Mobile layout (< sm) */}
+              <div className="flex flex-col gap-2 sm:hidden">
+                {/* Local Team Row */}
+                <div
+                  className={`flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 transition-all ${
+                    outcome.localWon
+                      ? "border border-gold/30 bg-gold/8 shadow-[0_0_15px_rgba(212,175,55,0.08)]"
+                      : "border border-white/5 bg-white/2"
+                  }`}
+                >
+                  <div className="min-w-0 flex-1">
+                    {outcome.localWon && (
+                      <div className="mb-1 flex items-center gap-1.5">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-gold/15 px-1.5 py-0.5 text-[0.5rem] font-bold tracking-wide text-gold uppercase">
+                          <TrophyMiniIcon className="h-2.5 w-2.5 text-gold" />
+                          Ganador
+                        </span>
+                      </div>
+                    )}
+                    <p
+                      className={`line-clamp-2 break-words text-sm leading-snug ${
+                        outcome.localWon
+                          ? "font-bold text-gold"
+                          : outcome.visitanteWon
+                            ? "font-normal text-white/40"
+                            : "font-semibold text-white"
+                      }`}
+                    >
+                      {p.equipo_local}
+                    </p>
+                  </div>
+
+                  {outcome.isStarted && (
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      {p.penales_local != null && (
+                        <span className="text-[0.58rem] font-mono text-amber-400">({p.penales_local})</span>
+                      )}
+                      <span
+                        className={`flex h-8 min-w-8 items-center justify-center rounded-lg px-2 font-(--font-display) text-base font-bold tabular-nums ${
+                          outcome.localWon
+                            ? "border border-gold/50 bg-gold/20 text-gold shadow-[0_0_12px_rgba(212,175,55,0.25)]"
+                            : outcome.visitanteWon
+                              ? "border border-white/6 bg-white/3 text-white/40"
+                              : "border border-white/12 bg-white/6 text-white"
+                        }`}
+                      >
+                        {p.goles_local}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Matchup separator */}
+                <div className="-my-0.5 flex items-center justify-center gap-2 px-2">
+                  <div className="h-px flex-1 bg-white/6" />
+                  <span className="text-[0.55rem] font-bold tracking-widest text-white/25 uppercase">
+                    {outcome.isFinished && outcome.isTie ? "Empate" : "vs"}
                   </span>
+                  <div className="h-px flex-1 bg-white/6" />
+                </div>
+
+                {/* Visitante Team Row */}
+                <div
+                  className={`flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 transition-all ${
+                    outcome.visitanteWon
+                      ? "border border-gold/30 bg-gold/8 shadow-[0_0_15px_rgba(212,175,55,0.08)]"
+                      : "border border-white/5 bg-white/2"
+                  }`}
+                >
+                  <div className="min-w-0 flex-1">
+                    {outcome.visitanteWon && (
+                      <div className="mb-1 flex items-center gap-1.5">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-gold/15 px-1.5 py-0.5 text-[0.5rem] font-bold tracking-wide text-gold uppercase">
+                          <TrophyMiniIcon className="h-2.5 w-2.5 text-gold" />
+                          Ganador
+                        </span>
+                      </div>
+                    )}
+                    <p
+                      className={`line-clamp-2 break-words text-sm leading-snug ${
+                        outcome.visitanteWon
+                          ? "font-bold text-gold"
+                          : outcome.localWon
+                            ? "font-normal text-white/40"
+                            : "font-semibold text-white"
+                      }`}
+                    >
+                      {p.equipo_visitante}
+                    </p>
+                  </div>
+
+                  {outcome.isStarted && (
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      {p.penales_visitante != null && (
+                        <span className="text-[0.58rem] font-mono text-amber-400">({p.penales_visitante})</span>
+                      )}
+                      <span
+                        className={`flex h-8 min-w-8 items-center justify-center rounded-lg px-2 font-(--font-display) text-base font-bold tabular-nums ${
+                          outcome.visitanteWon
+                            ? "border border-gold/50 bg-gold/20 text-gold shadow-[0_0_12px_rgba(212,175,55,0.25)]"
+                            : outcome.localWon
+                              ? "border border-white/6 bg-white/3 text-white/40"
+                              : "border border-white/12 bg-white/6 text-white"
+                        }`}
+                      >
+                        {p.goles_visitante}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {p.penales_local != null && p.penales_visitante != null && (
+                  <p className="text-center font-mono text-[0.6rem] text-amber-400/80">
+                    Tanda de penales: {p.penales_local} – {p.penales_visitante}
+                  </p>
+                )}
+              </div>
+
+              {/* Desktop layout (>= sm) */}
+              <div className="hidden sm:flex sm:items-center sm:gap-4 sm:py-1">
+                {/* Local Team (Right-aligned) */}
+                <div className="min-w-0 flex-1 text-right">
+                  <div className="flex items-center justify-end gap-2">
+                    {outcome.localWon && <TrophyMiniIcon className="h-4 w-4 shrink-0 text-gold" />}
+                    <p
+                      className={`line-clamp-2 break-words text-sm leading-tight sm:text-base ${
+                        outcome.localWon
+                          ? "font-bold text-gold"
+                          : outcome.visitanteWon
+                            ? "font-normal text-white/40"
+                            : "font-semibold text-white"
+                      }`}
+                      title={p.equipo_local}
+                    >
+                      {p.equipo_local}
+                    </p>
+                  </div>
+                  {outcome.localWon && (
+                    <div className="mt-0.5 flex items-center justify-end">
+                      <span className="text-[0.55rem] font-bold tracking-wider text-gold uppercase">Ganador</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Center Scoreboard */}
+                <div className="flex shrink-0 flex-col items-center justify-center px-2">
+                  {outcome.isStarted ? (
+                    <>
+                      <div className="flex items-center gap-2">
+                        {/* Local score */}
+                        <span
+                          className={`flex h-10 min-w-10 items-center justify-center rounded-xl px-2.5 font-(--font-display) text-lg font-bold tabular-nums ${
+                            outcome.localWon
+                              ? "border border-gold/50 bg-gold/20 text-gold shadow-[0_0_15px_rgba(212,175,55,0.25)]"
+                              : outcome.visitanteWon
+                                ? "border border-white/6 bg-white/3 text-white/40"
+                                : "border border-white/15 bg-white/8 text-white"
+                          }`}
+                        >
+                          {p.goles_local}
+                        </span>
+
+                        <span className={`text-xs font-bold ${outcome.isLive ? "animate-pulse text-gold" : "text-white/30"}`}>
+                          {outcome.isLive ? ":" : "–"}
+                        </span>
+
+                        {/* Visitante score */}
+                        <span
+                          className={`flex h-10 min-w-10 items-center justify-center rounded-xl px-2.5 font-(--font-display) text-lg font-bold tabular-nums ${
+                            outcome.visitanteWon
+                              ? "border border-gold/50 bg-gold/20 text-gold shadow-[0_0_15px_rgba(212,175,55,0.25)]"
+                              : outcome.localWon
+                                ? "border border-white/6 bg-white/3 text-white/40"
+                                : "border border-white/15 bg-white/8 text-white"
+                          }`}
+                        >
+                          {p.goles_visitante}
+                        </span>
+                      </div>
+
+                      {p.penales_local != null && p.penales_visitante != null ? (
+                        <span className="mt-1 font-mono text-[0.58rem] tracking-wider text-amber-400/90">
+                          Pen. {p.penales_local} – {p.penales_visitante}
+                        </span>
+                      ) : outcome.isFinished && outcome.isTie ? (
+                        <span className="mt-1 text-[0.55rem] tracking-wider text-white/35 uppercase">
+                          Empate
+                        </span>
+                      ) : null}
+                    </>
+                  ) : (
+                    <span className="rounded-xl border border-white/10 bg-white/5 px-4 py-1.5 font-(--font-display) text-xs font-bold tracking-widest text-white/40">
+                      VS
+                    </span>
+                  )}
+                </div>
+
+                {/* Visitante Team (Left-aligned) */}
+                <div className="min-w-0 flex-1 text-left">
+                  <div className="flex items-center justify-start gap-2">
+                    <p
+                      className={`line-clamp-2 break-words text-sm leading-tight sm:text-base ${
+                        outcome.visitanteWon
+                          ? "font-bold text-gold"
+                          : outcome.localWon
+                            ? "font-normal text-white/40"
+                            : "font-semibold text-white"
+                      }`}
+                      title={p.equipo_visitante}
+                    >
+                      {p.equipo_visitante}
+                    </p>
+                    {outcome.visitanteWon && <TrophyMiniIcon className="h-4 w-4 shrink-0 text-gold" />}
+                  </div>
+                  {outcome.visitanteWon && (
+                    <div className="mt-0.5 flex items-center justify-start">
+                      <span className="text-[0.55rem] font-bold tracking-wider text-gold uppercase">Ganador</span>
+                    </div>
+                  )}
                 </div>
               </div>
-
-              {/* 3 rows for teams on mobile: Team 1 -> vs -> Team 2 */}
-              <div className="flex flex-col items-center gap-1 rounded-xl border border-white/4 bg-white/2 px-3 py-2.5 text-center">
-                <p className="w-full truncate text-center text-sm font-medium text-white">{p.equipo_local}</p>
-                <div className="flex w-full items-center justify-center gap-2 my-0.5">
-                  <div className="h-px flex-1 bg-white/8" />
-                  <span className="text-[0.6rem] font-bold tracking-widest text-gold/70 uppercase">vs</span>
-                  <div className="h-px flex-1 bg-white/8" />
-                </div>
-                <p className="w-full truncate text-center text-sm font-medium text-white">{p.equipo_visitante}</p>
-              </div>
-            </div>
-
-            {/* Desktop layout (>= sm) */}
-            <div className="hidden sm:flex sm:items-center sm:gap-3">
-              {/* Order badge */}
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-[0.6rem] text-white/40 tabular-nums">
-                {idx + 1}
-              </span>
-
-              {/* Teams & Meta */}
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-white">
-                  {p.equipo_local}
-                  <span className="mx-2 text-white/30">vs</span>
-                  {p.equipo_visitante}
-                </p>
-                <p className="mt-0.5 truncate text-[0.62rem] text-white/40">
-                  {p.disciplina ? DISCIPLINA_LABEL_PUB[p.disciplina] ?? p.disciplina : ""}
-                  {p.categoria ? ` · ${p.categoria}` : ""}
-                  {p.grupo ? ` · Grupo ${p.grupo}` : ""}
-                  {p.fecha != null ? ` · Fecha ${p.fecha}` : ""}
-                </p>
-              </div>
-
-              {/* Score (if started or finished) */}
-              {(p.estado === "en_curso" || p.estado === "finalizado") && (
-                <span className="shrink-0 font-(--font-display) text-base tabular-nums text-white">
-                  {p.goles_local} – {p.goles_visitante}
-                </span>
-              )}
-
-              {/* Estado chip */}
-              <span
-                className={`shrink-0 rounded-full border px-2.5 py-1 text-[0.55rem] tracking-[0.14em] uppercase ${
-                  ESTADO_COLOR[p.estado] ?? ESTADO_COLOR.pendiente
-                }`}
-              >
-                {ESTADO_LABEL_PUB[p.estado] ?? p.estado}
-              </span>
-            </div>
-          </motion.div>
-        ))}
+            </motion.div>
+          );
+        })}
       </div>
     </motion.div>
   );
