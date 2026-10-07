@@ -546,7 +546,7 @@ function UpcomingSchedule() {
       <div className="mb-4 flex items-center justify-between">
         <div>
           <p className="text-[0.6rem] tracking-[0.3em] text-gold uppercase">Próximos Partidos</p>
-          <p className="mt-0.5 text-[0.65rem] text-white/35">Calendario del sábado</p>
+          <p className="mt-0.5 text-[0.65rem] text-white/35">Calendario de las proxima fechas</p>
         </div>
         <span className="flex h-7 w-7 items-center justify-center rounded-full border border-gold/25 bg-gold/8 text-[0.6rem] font-medium text-gold">
           {matches.length}
@@ -622,7 +622,7 @@ function UpcomingSchedule() {
                       </div>
                     )}
                     <p
-                      className={`line-clamp-2 break-words text-sm leading-snug ${
+                      className={`line-clamp-2 wrap-break-word text-sm leading-snug ${
                         outcome.localWon
                           ? "font-bold text-gold"
                           : outcome.visitanteWon
@@ -640,7 +640,7 @@ function UpcomingSchedule() {
                         <span className="text-[0.58rem] font-mono text-amber-400">({p.penales_local})</span>
                       )}
                       <span
-                        className={`flex h-8 min-w-8 items-center justify-center rounded-lg px-2 font-(--font-display) text-base font-bold tabular-nums ${
+                        className={`flex h-8 min-w-8 items-center justify-center rounded-lg px-2 font-display text-base font-bold tabular-nums ${
                           outcome.localWon
                             ? "border border-gold/50 bg-gold/20 text-gold shadow-[0_0_12px_rgba(212,175,55,0.25)]"
                             : outcome.visitanteWon
@@ -681,7 +681,7 @@ function UpcomingSchedule() {
                       </div>
                     )}
                     <p
-                      className={`line-clamp-2 break-words text-sm leading-snug ${
+                      className={`line-clamp-2 wrap-break-word text-sm leading-snug ${
                         outcome.visitanteWon
                           ? "font-bold text-gold"
                           : outcome.localWon
@@ -699,7 +699,7 @@ function UpcomingSchedule() {
                         <span className="text-[0.58rem] font-mono text-amber-400">({p.penales_visitante})</span>
                       )}
                       <span
-                        className={`flex h-8 min-w-8 items-center justify-center rounded-lg px-2 font-(--font-display) text-base font-bold tabular-nums ${
+                        className={`flex h-8 min-w-8 items-center justify-center rounded-lg px-2 font-display text-base font-bold tabular-nums ${
                           outcome.visitanteWon
                             ? "border border-gold/50 bg-gold/20 text-gold shadow-[0_0_12px_rgba(212,175,55,0.25)]"
                             : outcome.localWon
@@ -727,7 +727,7 @@ function UpcomingSchedule() {
                   <div className="flex items-center justify-end gap-2">
                     {outcome.localWon && <TrophyMiniIcon className="h-4 w-4 shrink-0 text-gold" />}
                     <p
-                      className={`line-clamp-2 break-words text-sm leading-tight sm:text-base ${
+                      className={`line-clamp-2 wrap-break-word text-sm leading-tight sm:text-base ${
                         outcome.localWon
                           ? "font-bold text-gold"
                           : outcome.visitanteWon
@@ -753,7 +753,7 @@ function UpcomingSchedule() {
                       <div className="flex items-center gap-2">
                         {/* Local score */}
                         <span
-                          className={`flex h-10 min-w-10 items-center justify-center rounded-xl px-2.5 font-(--font-display) text-lg font-bold tabular-nums ${
+                          className={`flex h-10 min-w-10 items-center justify-center rounded-xl px-2.5 font-display text-lg font-bold tabular-nums ${
                             outcome.localWon
                               ? "border border-gold/50 bg-gold/20 text-gold shadow-[0_0_15px_rgba(212,175,55,0.25)]"
                               : outcome.visitanteWon
@@ -770,7 +770,7 @@ function UpcomingSchedule() {
 
                         {/* Visitante score */}
                         <span
-                          className={`flex h-10 min-w-10 items-center justify-center rounded-xl px-2.5 font-(--font-display) text-lg font-bold tabular-nums ${
+                          className={`flex h-10 min-w-10 items-center justify-center rounded-xl px-2.5 font-display text-lg font-bold tabular-nums ${
                             outcome.visitanteWon
                               ? "border border-gold/50 bg-gold/20 text-gold shadow-[0_0_15px_rgba(212,175,55,0.25)]"
                               : outcome.localWon
@@ -793,7 +793,7 @@ function UpcomingSchedule() {
                       ) : null}
                     </>
                   ) : (
-                    <span className="rounded-xl border border-white/10 bg-white/5 px-4 py-1.5 font-(--font-display) text-xs font-bold tracking-widest text-white/40">
+                    <span className="rounded-xl border border-white/10 bg-white/5 px-4 py-1.5 font-display text-xs font-bold tracking-widest text-white/40">
                       VS
                     </span>
                   )}
@@ -803,7 +803,7 @@ function UpcomingSchedule() {
                 <div className="min-w-0 flex-1 text-left">
                   <div className="flex items-center justify-start gap-2">
                     <p
-                      className={`line-clamp-2 break-words text-sm leading-tight sm:text-base ${
+                      className={`line-clamp-2 wrap-break-word text-sm leading-tight sm:text-base ${
                         outcome.visitanteWon
                           ? "font-bold text-gold"
                           : outcome.localWon
@@ -952,7 +952,7 @@ export default function OlimpiadasClient() {
         {/* Header */}
         <div className="mt-10 text-center">
           <p className="text-[0.65rem] tracking-[0.32em] text-gold">OLIMPIADAS ULEAM CHONE · 2026</p>
-          <h1 className="mt-4 font-(--font-display) text-3xl tracking-tight text-white sm:text-4xl">
+          <h1 className="mt-4 font-display text-3xl tracking-tight text-white sm:text-4xl">
             Elige tu disciplina
           </h1>
           <p className="mx-auto mt-4 max-w-md text-sm leading-[1.85] text-white/45">
