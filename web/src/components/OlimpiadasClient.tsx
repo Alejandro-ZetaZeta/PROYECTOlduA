@@ -965,10 +965,10 @@ export default function OlimpiadasClient() {
         <div className="mt-8 overflow-hidden rounded-2xl border border-white/10">
           <div className="relative h-52 w-full sm:h-64">
             <iframe
-              src="https://maps.google.com/maps?q=-0.6864735,-80.1115369&output=embed&z=16"
+              src="https://maps.google.com/maps?q=-0.6864735,-80.1115369&t=k&output=embed&z=16"
               width="100%"
               height="100%"
-              style={{ border: 0, filter: "grayscale(30%) invert(5%)" }}
+              style={{ border: 0 }}
               allowFullScreen
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
