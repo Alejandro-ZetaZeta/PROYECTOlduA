@@ -961,6 +961,36 @@ export default function OlimpiadasClient() {
           </p>
         </div>
 
+        {/* Venue map preview */}
+        <div className="mt-8 overflow-hidden rounded-2xl border border-white/10">
+          <div className="relative h-52 w-full sm:h-64">
+            <iframe
+              src="https://maps.google.com/maps?q=-0.6864735,-80.1115369&output=embed&z=16"
+              width="100%"
+              height="100%"
+              style={{ border: 0, filter: "grayscale(30%) invert(5%)" }}
+              allowFullScreen
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              title="Ubicación Chone Park"
+            />
+          </div>
+          <a
+            href="https://maps.app.goo.gl/B1JtjHdTEie1jNZ99"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between gap-3 border-t border-white/8 bg-white/3 px-5 py-3 transition-colors hover:bg-white/6"
+          >
+            <div className="flex min-w-0 items-center gap-2.5">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 shrink-0 text-gold">
+                <path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z" /><circle cx="12" cy="10" r="3" />
+              </svg>
+              <span className="truncate text-xs text-white/60">Chone Park · Chone</span>
+            </div>
+            <span className="shrink-0 text-[0.65rem] tracking-[0.15em] text-gold/70 hover:text-gold">VER EN MAPS →</span>
+          </a>
+        </div>
+
         {/* Upcoming matches schedule */}
         <UpcomingSchedule />
 
