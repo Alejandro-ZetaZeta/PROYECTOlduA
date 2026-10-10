@@ -3,6 +3,7 @@
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { insforge } from "@/lib/insforge/browser";
+import { createDesfinalizarPatch } from "./olimpiadas/partidosResultado";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -1077,6 +1078,8 @@ export default function PartidosPanel({ onCountChange }: { onCountChange: (n: nu
   const [error, setError] = React.useState("");
   const [controlId, setControlId] = React.useState<string | null>(null);
   const [deletingId, setDeletingId] = React.useState<string | null>(null);
+  const [unfinalizandoId, setUnfinalizandoId] = React.useState<string | null>(null);
+  const [errorDesfinalizar, setErrorDesfinalizar] = React.useState("");
   const [drawRows, setDrawRows] = React.useState<GrupoDrawRow[]>([]);
   const [catDraw, setCatDraw] = React.useState<string>("");
 
@@ -1257,6 +1260,34 @@ export default function PartidosPanel({ onCountChange }: { onCountChange: (n: nu
       window.dispatchEvent(new CustomEvent("olimpiadas:resultados"));
     }
     setDeletingId(null);
+  }
+
+  async function handleDesfinalizar(partido: PartidoOlimpiadas) {
+    if (
+      partido.estado !== "finalizado" ||
+      !window.confirm(
+        "Se borrarán los goles y penales y el partido volverá a Sin iniciar. Se conservarán equipos, sorteo, tarjetas y tiempo. ¿Continuar?",
+      )
+    ) return;
+
+    setErrorDesfinalizar("");
+    setUnfinalizandoId(partido.id);
+    try {
+      const { error: err } = await insforge.database
+        .from("partidos_olimpiadas")
+        .update([createDesfinalizarPatch(partido.historial ?? [])])
+        .eq("id", partido.id);
+      if (err) {
+        setErrorDesfinalizar("No se pudo desfinalizar el partido. Intenta de nuevo.");
+        return;
+      }
+      await loadPartidos();
+      window.dispatchEvent(new CustomEvent("olimpiadas:resultados"));
+    } catch {
+      setErrorDesfinalizar("No se pudo desfinalizar el partido. Intenta de nuevo.");
+    } finally {
+      setUnfinalizandoId(null);
+    }
   }
 
   return (
@@ -1510,6 +1541,7 @@ export default function PartidosPanel({ onCountChange }: { onCountChange: (n: nu
         </div>
       )}
 
+      {errorDesfinalizar && <p role="alert" className="text-xs text-red-400">{errorDesfinalizar}</p>}
       {loading ? (
         <div className="flex h-40 items-center justify-center text-xs text-white/30">Cargando partidos…</div>
       ) : partidos.length === 0 ? (
@@ -1596,6 +1628,16 @@ export default function PartidosPanel({ onCountChange }: { onCountChange: (n: nu
                       >
                         Controlar
                       </button>
+                      {p.estado === "finalizado" && (
+                        <button
+                          onClick={() => void handleDesfinalizar(p)}
+                          disabled={unfinalizandoId === p.id}
+                          title="Borrar el marcador y reabrir el partido sin eliminarlo"
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/8 px-2.5 py-1.5 text-[0.6rem] tracking-[0.12em] text-amber-200 uppercase transition-colors hover:bg-amber-500/15 disabled:opacity-40"
+                        >
+                          <UndoIcon /> {unfinalizandoId === p.id ? "Guardando…" : "Desfinalizar"}
+                        </button>
+                      )}
                       <button
                         onClick={() => handleEliminar(p.id)}
                         disabled={deletingId === p.id}
