@@ -168,7 +168,9 @@ export default function StandingsTable({
                             </span>
                           </td>
                           <td className="px-2.5 py-2 text-left text-white">
-                            <span className="truncate">{r.equipo}</span>
+                            <span className={`truncate ${r.clasificado ? "" : "line-through"}`}>
+                              {r.equipo}
+                            </span>
                           </td>
                           <td className="px-2.5 py-2 text-center font-semibold text-white tabular-nums">{r.pts}</td>
                           <td className="px-2.5 py-2 text-center text-white/60 tabular-nums">{r.pj}</td>
