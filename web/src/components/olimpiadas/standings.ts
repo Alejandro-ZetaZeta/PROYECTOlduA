@@ -21,6 +21,8 @@ export interface PartidoResumen {
   categoria: Categoria | null;
   grupo: string | null;
   fecha: number | null;
+  penales_local?: number | null;
+  penales_visitante?: number | null;
 }
 
 export interface StandingRow {
@@ -206,13 +208,37 @@ export function computeStandings(
   }
   const list = [...rows.values()];
   for (const r of list) r.dg = r.gf - r.gc;
-  list.sort(
-    (a, b) =>
+  const pairKey = (a: string, b: string) => [a, b].sort().join("\u0000");
+  const h2h = new Map<string, string>();
+  for (const p of partidos) {
+    if (p.estado !== "finalizado") continue;
+    const gl = p.goles_local ?? 0;
+    const gv = p.goles_visitante ?? 0;
+    const pl = p.penales_local;
+    const pv = p.penales_visitante;
+    const winner =
+      gl > gv
+        ? p.equipo_local
+        : gv > gl
+          ? p.equipo_visitante
+          : pl != null && pv != null && pl !== pv
+            ? pl > pv
+              ? p.equipo_local
+              : p.equipo_visitante
+            : null;
+    if (winner) h2h.set(pairKey(p.equipo_local, p.equipo_visitante), winner);
+  }
+  // shortcut: direct match only separates two tied teams; 3+ way cycles fall back to GF/name.
+  list.sort((a, b) => {
+    const winner = h2h.get(pairKey(a.equipo, b.equipo));
+    return (
       b.pts - a.pts ||
       b.dg - a.dg ||
+      (winner === a.equipo ? -1 : winner === b.equipo ? 1 : 0) ||
       b.gf - a.gf ||
-      a.equipo.localeCompare(b.equipo, "es"),
-  );
+      a.equipo.localeCompare(b.equipo, "es")
+    );
+  });
   list.forEach((r, i) => {
     r.pos = i + 1;
     r.clasificado = i < 2;
