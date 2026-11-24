@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { LayoutGroup, motion } from "framer-motion";
-import { insforge } from "@/lib/insforge/browser";
+import { neon } from "@/lib/neon/client";
 import {
   buildTeamPool,
   computeGroupDistribution,
@@ -167,16 +167,16 @@ export default function DrawController() {
     setArmRedraw(false);
     setArmUndo(false);
     const [insc, gr, part] = await Promise.all([
-      insforge.database
+      neon
         .from("inscripciones_futbol")
         .select("nombre_equipo, representante")
         .eq("categoria", categoria),
-      insforge.database
+      neon
         .from("olimpiadas_grupos")
         .select("*")
         .eq("disciplina", DISCIPLINA)
         .eq("categoria", categoria),
-      insforge.database
+      neon
         .from("partidos_olimpiadas")
         .select("*")
         .eq("disciplina", DISCIPLINA)
@@ -227,13 +227,13 @@ export default function DrawController() {
   }, [cargar]);
 
   async function persistirSorteo(map: Map<string, string[]>) {
-    const { error: delGruposErr } = await insforge.database
+    const { error: delGruposErr } = await neon
       .from("olimpiadas_grupos")
       .delete()
       .eq("disciplina", DISCIPLINA)
       .eq("categoria", categoria);
     if (delGruposErr) return delGruposErr;
-    const { error: delPartidosErr } = await insforge.database
+    const { error: delPartidosErr } = await neon
       .from("partidos_olimpiadas")
       .delete()
       .eq("disciplina", DISCIPLINA)
@@ -246,7 +246,7 @@ export default function DrawController() {
       );
     }
     if (rows.length === 0) return null;
-    const { error } = await insforge.database.from("olimpiadas_grupos").insert(rows);
+    const { error } = await neon.from("olimpiadas_grupos").insert(rows);
     return error;
   }
 
@@ -302,7 +302,7 @@ export default function DrawController() {
     setErrorMsg("");
     setPhase("persisting");
     const all = generateFixture(groups);
-    const { error: delErr } = await insforge.database
+    const { error: delErr } = await neon
       .from("partidos_olimpiadas")
       .delete()
       .eq("disciplina", DISCIPLINA)
@@ -328,7 +328,7 @@ export default function DrawController() {
       estado: "pendiente",
     }));
     const { error } = rows.length
-      ? await insforge.database.from("partidos_olimpiadas").insert(rows)
+      ? await neon.from("partidos_olimpiadas").insert(rows)
       : { error: null };
     if (error) {
       setErrorMsg("No se pudo generar el fixture. Intenta de nuevo.");
@@ -349,12 +349,12 @@ export default function DrawController() {
     setArmUndo(false);
     setErrorMsg("");
     setPhase("persisting");
-    const { error: e1 } = await insforge.database
+    const { error: e1 } = await neon
       .from("olimpiadas_grupos")
       .delete()
       .eq("disciplina", DISCIPLINA)
       .eq("categoria", categoria);
-    const { error: e2 } = await insforge.database
+    const { error: e2 } = await neon
       .from("partidos_olimpiadas")
       .delete()
       .eq("disciplina", DISCIPLINA)

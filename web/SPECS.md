@@ -12,7 +12,8 @@ admin panel is gated.
 - **Tailwind v4** via `@tailwindcss/vite` (CSS-first config in
   `src/styles/global.css`)
 - **TypeScript strict** (extends `astro/tsconfigs/strict`)
-- **InsForge** backend via `@insforge/sdk@^1.5.1` (`/ssr` subpath)
+- **Neon** backend: Lakebase Postgres + Managed Better Auth + Data API,
+  accessed with `@neon/neon-js` (`client.from()`, `client.rpc()`)
 - **Vercel** for deploy; static marketing pages opt into
   `export const prerender = true`
 
@@ -27,17 +28,15 @@ web/
       registro-torneo.astro # Public registration form (mounts <RegistrationClient>)
       tournament-registration.astro
       404.astro
-      api/auth/             # /api/auth/sign-in, sign-out, refresh
     layouts/BaseLayout.astro
     components/             # .astro static + .tsx islands
     content.config.ts       # `events` collection (Zod schema, glob loader)
     content/events/*.json   # Event data (single source of truth)
-    lib/insforge/           # browser.ts, server.ts, cookieAdapter.ts
-    middleware.ts           # updateSession + /admin/* guard
+    lib/neon/               # client.ts (Data API + auth), auth.ts (admin sign-in)
     styles/global.css
   public/
     icon.png                # Favicon (original Next.js asset)
-  .env.local                # PUBLIC_INSFORGE_URL, PUBLIC_INSFORGE_ANON_KEY
+  .env.local                # DATABASE_URL*, NEON_AUTH_*, PUBLIC_NEON_DB_URL
 ```
 
 ## Event contract
@@ -63,49 +62,72 @@ Zod schema in `src/content.config.ts`. The collection drives:
 - Durations ~0.5–0.7s, `easeOutQuint`
 - View transitions enabled via `ClientRouter` in `BaseLayout`
 
-## Auth (InsForge)
-- **Cookies**: `insforge_access_token` (non-httpOnly, browser-readable) +
-  `insforge_refresh_token` (httpOnly, server-owned)
-- **Server actions** under `src/pages/api/auth/*`:
-  - `POST /api/auth/sign-in` — `createAuthActions({ cookies }).signInWithPassword`
-    + role check on `profiles.role === 'admin'` (returns 401/403/200)
-  - `POST /api/auth/sign-out` — `createAuthActions({ cookies }).signOut()`
-  - `POST /api/auth/refresh` — `refreshAuth({ request, cookies })` returns
-    the SDK-built `result.response` (which already carries refreshed
-    `Set-Cookie` headers)
-- **Cookie adapter** `src/lib/insforge/cookieAdapter.ts` wraps Astro's
-  unified `AstroCookies` to the SDK's `CookieStore`/`CookieWriter` shape
-  via overloaded `set`/`delete` discrimination
-- **Middleware** `src/middleware.ts` calls `updateSession()` on every
-  request, then guards only `/admin/*` (redirects non-admins to `/?login=…`)
-- **Browser client** `src/lib/insforge/browser.ts` calls
-  `createBrowserClient({ refreshUrl: '/api/auth/refresh' })` with a
-  **custom `fetch` wrapper** (see "Known SDK workarounds" below)
+## Auth & data (Neon)
 
-## Known SDK workarounds
-- **Refresh endpoint is rewritten to the relative URL.** The SDK's
-  `createBrowserClient` internally builds the refresh request as
-  `${baseUrl}/api/auth/refresh` (absolute), then `ssrFetch` calls
-  `fetchImpl(input, init)` on it — bypassing the app's relative
-  `/api/auth/refresh` route. The browser would hit the InsForge backend
-  directly, where the httpOnly refresh cookie isn't visible, getting 401.
-  The `browser.ts` `fetchWithRefreshRewrite` intercepts any request whose
-  URL ends in `/api/auth/refresh` and rewrites it to the relative path
-  before delegating to `globalThis.fetch`.
-- **`verifySession` is async** in client code (was `verifyAndExtendSession`
-  in the old Next.js version). The `RegistrationClient` `useEffect`
-  awaits it before each fetch.
+- **Auth**: Managed Better Auth (`neon_auth` schema). The browser client at
+  `src/lib/neon/client.ts` logs in with `neon.auth.signIn.email()` and
+  restores sessions with `neon.auth.getSession()`. There are no auth API
+  routes and no middleware.
+- **Admin gate**: `src/lib/neon/auth.ts` → `signInAdmin()` signs in, reads
+  the caller's row from `public.profiles`, and signs out anyone whose role
+  is not `admin`.
+- **Data**: Neon Data API (PostgREST-compatible). Client islands query with
+  `neon.from("table").select/insert/update/delete` and `neon.rpc(...)`.
+  Inserts take an array; updates take a single object.
+- **Anonymous access**: `createClient(..., { auth: { allowAnonymous: true } })`
+  fetches a short-lived guest JWT, so the public bracket, standings, and
+  registration form work without a login. RLS limits guests to public reads
+  and inserts.
+- **RLS**: `authenticated` and `anonymous` roles. Policies use `auth.uid()`
+  and `public.is_admin()`; the schema lives in
+  `../migrations/20261124000000_neon-init.sql`.
+- **Profiles**: `public.profiles(id uuid → neon_auth."user", role)`.
+  Admin roles are assigned with SQL (`neon psql`), not from the app.
+
+## Known quirks
+- **Update takes an object, insert takes an array** (`postgrest-js`).
+  Calling `update([...])` sends a JSON array and PostgREST rejects it.
+- **Anonymous reads need a token.** If `allowAnonymous` is removed, public
+  pages fail with `PGRST302` (missing bearer token).
+- **Schema cache**: after DDL, run `neon data-api refresh-schema` or new
+  tables/columns are invisible to the Data API.
 
 ## Build & dev
 - `npm run build` — Vercel adapter output in `.vercel/output/`
 - `npm run dev` — Astro dev server (see `AGENTS.md` → "Running dev
   servers" for the correct background-process pattern)
-- `npm run check` — `astro check` (0 errors, 1 Zod-deprecation warning
-  on `social: z.string()` in `content.config.ts`)
+- `npm run check` — `astro check` (0 errors; unused-code hints only)
 
 ## Environment
 `web/.env.local` (gitignored):
 ```
-PUBLIC_INSFORGE_URL=https://tij96tn9.us-west.insforge.app
-PUBLIC_INSFORGE_ANON_KEY=<jwt>
+DATABASE_URL=postgresql://...        # pooled, for server/scripts
+DATABASE_URL_UNPOOLED=postgresql://... # direct, for psql/pg_dump
+NEON_AUTH_BASE_URL=https://...neonauth...
+NEON_AUTH_JWKS_URL=https://.../.well-known/jwks.json
+PUBLIC_NEON_DB_URL=https://ep-....c-9.us-east-2.aws.neon.tech/neondb
 ```
+`PUBLIC_NEON_DB_URL` is inlined at build time. Set it in Vercel (Production
+and Preview) before deploying, and add the deployed origin to Neon Auth's
+trusted domains (`neon neon-auth domain add https://...`).
+
+## Admin accounts
+
+Sign-up is open on the Auth branch (email verification is off) but there is no
+public sign-up UI. Create the account once, then grant the role:
+
+```bash
+curl -X POST "$NEON_AUTH_BASE_URL/sign-up/email" \
+  -H "Origin: http://localhost:4321" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@example.com","password":"...","name":"Admin"}'
+```
+
+The response contains the user `id` (a UUID). Then:
+
+```sql
+insert into public.profiles (id, role) values ('<user id>', 'admin');
+```
+
+Run it with `neon psql`. Auth users and `profiles` rows cascade together, so
+deleting the auth user also removes the role.

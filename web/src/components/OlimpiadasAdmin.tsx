@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { insforge } from "@/lib/insforge/browser";
+import { neon } from "@/lib/neon/client";
+import { signInAdmin } from "@/lib/neon/auth";
 import { DISCIPLINAS, getDisciplina, type DisciplinaId } from "@/data/olimpiadas";
 import PartidosPanel from "./OlimpiadasPartidos";
 import DrawController from "./olimpiadas/DrawController";
@@ -140,29 +141,18 @@ function LoginModal({ open, onClose, onSuccess }: { open: boolean; onClose: () =
     e.preventDefault();
     setLoading(true);
     setError("");
-    const res = await fetch("/api/auth/sign-in", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: email.trim(), password }),
-    });
-    if (res.status === 401) {
+    const result = await signInAdmin(email, password);
+    if (result !== "ok") {
       setLoading(false);
-      setError("Credenciales incorrectas.");
-      return;
-    }
-    if (res.status === 403) {
-      setLoading(false);
-      setError("Tu cuenta no tiene permisos de administrador.");
-      return;
-    }
-    if (res.status === 429) {
-      setLoading(false);
-      setError("Demasiados intentos. Espera un minuto e intenta de nuevo.");
-      return;
-    }
-    if (!res.ok) {
-      setLoading(false);
-      setError("Error de red. Intenta de nuevo.");
+      setError(
+        result === "forbidden"
+          ? "Tu cuenta no tiene permisos de administrador."
+          : result === "too_many"
+            ? "Demasiados intentos. Espera un minuto e intenta de nuevo."
+            : result === "invalid"
+              ? "Credenciales incorrectas."
+              : "Error de red. Intenta de nuevo.",
+      );
       return;
     }
     setLoading(false);
@@ -246,10 +236,10 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [confirmDelete, setConfirmDelete] = React.useState<Row | null>(null);
   const [deleting, setDeleting] = React.useState(false);
 
-  // Verifies the InsForge session is alive and the admin role is still valid.
+  // Re-checks the Neon Auth session before each panel fetch.
   const verifySession = React.useCallback(async () => {
     if (typeof window === "undefined") return false;
-    const { data } = await insforge.auth.getCurrentUser();
+    const { data } = await neon.auth.getSession();
     if (!data?.user) {
       onClose();
       return false;
@@ -260,7 +250,7 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   async function fetchRows(disciplineId: DisciplinaId) {
     if (!(await verifySession())) return;
     setLoading(true);
-    const { data } = await insforge.database
+    const { data } = await neon
       .from(getDisciplina(disciplineId).table)
       .select("*")
       .order("created_at", { ascending: true });
@@ -272,7 +262,7 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
     if (!(await verifySession())) return;
     setLoading(true);
     const results = await Promise.all(
-      DISCIPLINAS.map((d) => insforge.database.from(d.table).select("id")),
+      DISCIPLINAS.map((d) => neon.from(d.table).select("id")),
     );
     const next: Record<DisciplinaId, number> = { futbol: 0, basket: 0, ecuavoley: 0, ajedrez: 0, pingpong: 0 };
     DISCIPLINAS.forEach((d, i) => {
@@ -280,11 +270,11 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
       if (Array.isArray(list)) next[d.id] = list.length;
     });
     setCounts(next);
-    const { data: partidosList } = await insforge.database
+    const { data: partidosList } = await neon
       .from("partidos_olimpiadas")
       .select("id");
     if (Array.isArray(partidosList)) setPartidosCount(partidosList.length);
-    const { data } = await insforge.auth.getCurrentUser();
+    const { data } = await neon.auth.getSession();
     if (data?.user) setAdminEmail(data.user.email ?? null);
     if (tab !== "partidos" && tab !== "grupos" && tab !== "cronograma") await fetchRows(tab);
     setLoading(false);
@@ -310,12 +300,7 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   }
 
   async function handleLogout() {
-    // Server clears the auth cookies. The browser SDK caches the session in
-    // memory and exposes no way to clear it (auth surface is read-only), so a
-    // reload drops the cached session and the panel won't auto-restore.
-    try {
-      await fetch("/api/auth/sign-out", { method: "POST" });
-    } catch { /* still reload below */ }
+    await neon.auth.signOut();
     if (typeof window !== "undefined") window.location.reload();
   }
 
@@ -325,7 +310,7 @@ function AdminPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
     const id = row.id as string;
     if (!id) return;
     setDeleting(true);
-    const { error } = await insforge.database
+    const { error } = await neon
       .from(getDisciplina(tab).table)
       .delete()
       .eq("id", id);
@@ -621,12 +606,12 @@ export default function OlimpiadasAdmin() {
   // Asks the server whether the current session is a valid admin session.
   const checkIsAdminLoggedIn = React.useCallback(async () => {
     if (typeof window === "undefined") return false;
-    const { data } = await insforge.auth.getCurrentUser();
+    const { data } = await neon.auth.getSession();
     if (!data?.user) return false;
-    const { data: profile } = await insforge.database
+    const { data: profile } = await neon
       .from("profiles")
       .select("role")
-      .eq("auth_id", data.user.id)
+      .eq("id", data.user.id)
       .single();
     return profile?.role === "admin";
   }, []);

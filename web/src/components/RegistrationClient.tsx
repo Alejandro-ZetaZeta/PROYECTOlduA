@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { insforge } from "@/lib/insforge/browser";
+import { signInAdmin } from "@/lib/neon/auth";
+import { neon } from "@/lib/neon/client";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -372,24 +373,18 @@ function LoginModal({ open, onClose, onSuccess }: { open: boolean; onClose: () =
     e.preventDefault();
     setLoading(true);
     setError("");
-    const res = await fetch("/api/auth/sign-in", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-    if (res.status === 401) {
+    const result = await signInAdmin(email, password);
+    if (result !== "ok") {
       setLoading(false);
-      setError("Credenciales incorrectas.");
-      return;
-    }
-    if (res.status === 403) {
-      setLoading(false);
-      setError("Tu cuenta no tiene permisos de administrador.");
-      return;
-    }
-    if (!res.ok) {
-      setLoading(false);
-      setError("Error de red. Intenta de nuevo.");
+      setError(
+        result === "forbidden"
+          ? "Tu cuenta no tiene permisos de administrador."
+          : result === "too_many"
+            ? "Demasiados intentos. Espera un minuto e intenta de nuevo."
+            : result === "invalid"
+              ? "Credenciales incorrectas."
+              : "Error de red. Intenta de nuevo.",
+      );
       return;
     }
     setLoading(false);
@@ -505,9 +500,9 @@ function MatchPanel({ equipos, partidos, loading, finalizado, finalizando, onPar
   async function handleSaveHorario(id: string) {
     const newVal = tempHorario[id] || "";
     setSavingHorarioId(id);
-    const { error } = await insforge.database
+    const { error } = await neon
       .from("partidos_torneo")
-      .update([{ horario: newVal || null }])
+      .update({ horario: newVal || null })
       .eq("id", id);
     if (!error) {
       setEditingHorarioId(null);
@@ -636,7 +631,7 @@ function MatchPanel({ equipos, partidos, loading, finalizado, finalizando, onPar
       toInsert.push({ equipo_local: bye, equipo_visitante: "BYE", goles_local: 1, goles_visitante: 0, genero: tabGenero, ronda: nextRonda, estado: "finalizado" });
     }
     setGenerating(true);
-    const { error } = await insforge.database.from("partidos_torneo").insert(toInsert);
+    const { error } = await neon.from("partidos_torneo").insert(toInsert);
     if (error) setGenError("Error al generar partidos.");
     else { onPartidoAdded(); }
     setGenerating(false);
@@ -651,7 +646,7 @@ function MatchPanel({ equipos, partidos, loading, finalizado, finalizando, onPar
 
     const isBye = visitanteTeam === "BYE";
     setManualSaving(true);
-    const { error } = await insforge.database.from("partidos_torneo").insert([{
+    const { error } = await neon.from("partidos_torneo").insert([{
       equipo_local: localTeam,
       equipo_visitante: visitanteTeam,
       goles_local: isBye ? 1 : 0,
@@ -683,7 +678,7 @@ function MatchPanel({ equipos, partidos, loading, finalizado, finalizando, onPar
     const gv = parseInt(sc?.visitante ?? "", 10);
     if (isNaN(gl) || isNaN(gv)) { setSaveErrors((prev) => ({ ...prev, [p.id]: "Ingresa ambos resultados." })); return; }
     setSavingId(p.id);
-    const { error } = await insforge.database.from("partidos_torneo").update([{ goles_local: gl, goles_visitante: gv, estado: "finalizado", penales_local: null, penales_visitante: null }]).eq("id", p.id);
+    const { error } = await neon.from("partidos_torneo").update({ goles_local: gl, goles_visitante: gv, estado: "finalizado", penales_local: null, penales_visitante: null }).eq("id", p.id);
     if (error) { setSaveErrors((prev) => ({ ...prev, [p.id]: "Error al guardar." })); }
     else { setScores((prev) => { const n = { ...prev }; delete n[p.id]; return n; }); onPartidoAdded(); }
     setSavingId(null);
@@ -696,7 +691,7 @@ function MatchPanel({ equipos, partidos, loading, finalizado, finalizando, onPar
     if (isNaN(pl) || isNaN(pv)) { setPenaltyErrors((prev) => ({ ...prev, [p.id]: "Ingresa ambos resultados de penales." })); return; }
     if (pl === pv) { setPenaltyErrors((prev) => ({ ...prev, [p.id]: "Los penales tampoco pueden terminar en empate." })); return; }
     setSavingPenaltyId(p.id);
-    const { error } = await insforge.database.from("partidos_torneo").update([{ penales_local: pl, penales_visitante: pv }]).eq("id", p.id);
+    const { error } = await neon.from("partidos_torneo").update({ penales_local: pl, penales_visitante: pv }).eq("id", p.id);
     if (error) { setPenaltyErrors((prev) => ({ ...prev, [p.id]: "Error al guardar penales." })); }
     else {
       setPenaltyOpen(null);
@@ -709,15 +704,15 @@ function MatchPanel({ equipos, partidos, loading, finalizado, finalizando, onPar
 
   async function handleResetPartido(p: Partido) {
     setResettingId(p.id);
-    const { error } = await insforge.database
+    const { error } = await neon
       .from("partidos_torneo")
-      .update([{
+      .update({
         goles_local: 0,
         goles_visitante: 0,
         estado: "pendiente",
         penales_local: null,
         penales_visitante: null
-      }])
+      })
       .eq("id", p.id);
     if (!error) {
       onPartidoAdded();
@@ -727,7 +722,7 @@ function MatchPanel({ equipos, partidos, loading, finalizado, finalizando, onPar
 
   async function handleDelete(id: string) {
     setDeletingId(id);
-    const { error } = await insforge.database.from("partidos_torneo").delete().eq("id", id);
+    const { error } = await neon.from("partidos_torneo").delete().eq("id", id);
     if (!error) onPartidoDeleted(id);
     setDeletingId(null);
   }
@@ -1227,14 +1222,12 @@ function AdminPanel({ open, onClose, onApprovalChange, equipos, finalizado, onFi
   const [adminEmail, setAdminEmail] = React.useState<string | null>(null);
   const [finalizando, setFinalizando] = React.useState(false);
 
-  // Verifies the InsForge session is alive. The server cookie is auto-refreshed
-  // by the browser client; we just need to make sure getCurrentUser still returns
-  // a user. The middleware already enforces admin role on the route, so a non-
-  // admin reaching this page is impossible — but we still guard in case the
-  // session expires while the panel is open.
+  // Re-checks the Neon Auth session before each panel fetch. The admin role
+  // itself is enforced by RLS; this only closes the panel when the session
+  // expires while it is open.
   const verifySession = React.useCallback(async () => {
     if (typeof window === "undefined") return false;
-    const { data } = await insforge.auth.getCurrentUser();
+    const { data } = await neon.auth.getSession();
     if (!data?.user) {
       onClose();
       return false;
@@ -1245,7 +1238,7 @@ function AdminPanel({ open, onClose, onApprovalChange, equipos, finalizado, onFi
   async function fetchRegistrations() {
     if (!(await verifySession())) return;
     setLoadingRegs(true);
-    const { data } = await insforge.database
+    const { data } = await neon
       .from("inscripciones_torneo")
       .select("*")
       .order("created_at", { ascending: true });
@@ -1256,7 +1249,7 @@ function AdminPanel({ open, onClose, onApprovalChange, equipos, finalizado, onFi
   async function fetchPartidos() {
     if (!(await verifySession())) return;
     setLoadingPartidos(true);
-    const { data } = await insforge.database
+    const { data } = await neon
       .from("partidos_torneo")
       .select("*")
       .order("created_at", { ascending: true });
@@ -1269,7 +1262,7 @@ function AdminPanel({ open, onClose, onApprovalChange, equipos, finalizado, onFi
       (async () => {
         if (!(await verifySession())) return;
         await Promise.all([fetchRegistrations(), fetchPartidos()]);
-        const { data } = await insforge.auth.getCurrentUser();
+        const { data } = await neon.auth.getSession();
         if (data?.user) setAdminEmail(data.user.email ?? null);
       })();
     }
@@ -1278,9 +1271,9 @@ function AdminPanel({ open, onClose, onApprovalChange, equipos, finalizado, onFi
   async function toggle(reg: Registration) {
     if (!(await verifySession())) return;
     setTogglingId(reg.id);
-    await insforge.database
+    await neon
       .from("inscripciones_torneo")
-      .update([{ aprobado: !reg.aprobado }])
+      .update({ aprobado: !reg.aprobado })
       .eq("id", reg.id);
     await fetchRegistrations();
     onApprovalChange();
@@ -1290,7 +1283,7 @@ function AdminPanel({ open, onClose, onApprovalChange, equipos, finalizado, onFi
   async function deleteRegistration(id: string) {
     if (!(await verifySession())) return;
     setTogglingId(id);
-    const { error } = await insforge.database.from("inscripciones_torneo").delete().eq("id", id);
+    const { error } = await neon.from("inscripciones_torneo").delete().eq("id", id);
     if (!error) {
       setRegistrations((prev) => prev.filter((r) => r.id !== id));
       onApprovalChange();
@@ -1299,7 +1292,7 @@ function AdminPanel({ open, onClose, onApprovalChange, equipos, finalizado, onFi
   }
 
   async function handleLogout() {
-    await fetch("/api/auth/sign-out", { method: "POST" });
+    await neon.auth.signOut();
     onClose();
   }
 
@@ -1312,9 +1305,9 @@ function AdminPanel({ open, onClose, onApprovalChange, equipos, finalizado, onFi
     if (!(await verifySession())) return;
     setFinalizando(true);
     const next = !finalizado;
-    await insforge.database
+    await neon
       .from("torneo_config")
-      .update([{ finalizado: next, updated_at: new Date().toISOString() }])
+      .update({ finalizado: next, updated_at: new Date().toISOString() })
       .eq("id", "default");
     onFinalizadoChange(next);
     setFinalizando(false);
@@ -1507,12 +1500,12 @@ export default function RegistroTorneoPage() {
   // Returns a promise so the caller can await before revealing the panel.
   const checkIsAdminLoggedIn = React.useCallback(async () => {
     if (typeof window === "undefined") return false;
-    const { data } = await insforge.auth.getCurrentUser();
+    const { data } = await neon.auth.getSession();
     if (!data?.user) return false;
-    const { data: profile } = await insforge.database
+    const { data: profile } = await neon
       .from("profiles")
       .select("role")
-      .eq("auth_id", data.user.id)
+      .eq("id", data.user.id)
       .single();
     return profile?.role === "admin";
   }, []);
@@ -1520,9 +1513,9 @@ export default function RegistroTorneoPage() {
   async function fetchData() {
     setLoadingData(true);
     const [{ data: eqData }, { data: pData }, { data: cfgData }] = await Promise.all([
-      insforge.database.rpc("get_equipos_aprobados"),
-      insforge.database.from("partidos_torneo").select("*").order("created_at", { ascending: true }),
-      insforge.database.from("torneo_config").select("finalizado").eq("id", "default").single(),
+      neon.rpc("get_equipos_aprobados"),
+      neon.from("partidos_torneo").select("*").order("created_at", { ascending: true }),
+      neon.from("torneo_config").select("finalizado").eq("id", "default").single(),
     ]);
     if (eqData) setEquipos(eqData as { nombre_equipo: string; genero: string }[]);
     if (pData) setPartidos(pData as Partido[]);
@@ -1573,7 +1566,7 @@ export default function RegistroTorneoPage() {
     }
     setState("submitting");
     setErrorMsg("");
-    const { error } = await insforge.database.from("inscripciones_torneo").insert([{ ...form }]);
+    const { error } = await neon.from("inscripciones_torneo").insert([{ ...form }]);
     if (error) {
       setState("error");
       if (error.code === "23505") {

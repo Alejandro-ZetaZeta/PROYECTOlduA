@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { insforge } from "@/lib/insforge/browser";
+import { neon } from "@/lib/neon/client";
 import { createDesfinalizarPatch } from "./olimpiadas/partidosResultado";
 
 // ---------------------------------------------------------------------------
@@ -128,9 +128,9 @@ function clockEmit(remaining: number, running: boolean) {
 }
 
 function clockPersist(state: ClockState, enCurso: boolean) {
-  void insforge.database
+  void neon
     .from("partidos_olimpiadas")
-    .update([{ segundos_restantes: clockRemaining(state), en_curso: enCurso }])
+    .update({ segundos_restantes: clockRemaining(state), en_curso: enCurso })
     .eq("id", state.matchId);
 }
 
@@ -355,15 +355,13 @@ function MatchControlModal({
       if (!matchRef.current) return;
       const rem =
         clock && clock.matchId === matchId ? clockRemaining(clock) : remainingRef.current;
-      await insforge.database
+      await neon
         .from("partidos_olimpiadas")
-        .update([
-          {
-            ...patch,
-            segundos_restantes: rem,
-            en_curso: runningRef.current,
-          },
-        ])
+        .update({
+          ...patch,
+          segundos_restantes: rem,
+          en_curso: runningRef.current,
+        })
         .eq("id", matchId);
     },
     [matchId],
@@ -372,7 +370,7 @@ function MatchControlModal({
   React.useEffect(() => {
     let active = true;
     (async () => {
-      const { data } = await insforge.database
+      const { data } = await neon
         .from("partidos_olimpiadas")
         .select("*")
         .eq("id", matchId)
@@ -405,9 +403,9 @@ function MatchControlModal({
           // modal is closed right away.
           clockStart({ matchId, remaining: rem, at: Date.now() });
         } else {
-          insforge.database
+          neon
             .from("partidos_olimpiadas")
-            .update([{ segundos_restantes: 0, en_curso: false }])
+            .update({ segundos_restantes: 0, en_curso: false })
             .eq("id", matchId);
         }
       }
@@ -1091,7 +1089,7 @@ export default function PartidosPanel({ onCountChange }: { onCountChange: (n: nu
 
   React.useEffect(() => {
     (async () => {
-      const { data } = await insforge.database
+      const { data } = await neon
         .from("olimpiadas_grupos")
         .select("equipo, grupo, categoria")
         .eq("disciplina", "futbol");
@@ -1116,7 +1114,7 @@ export default function PartidosPanel({ onCountChange }: { onCountChange: (n: nu
 
   async function loadPartidos() {
     setLoading(true);
-    const { data } = await insforge.database
+    const { data } = await neon
       .from("partidos_olimpiadas")
       .select("*")
       .order("created_at", { ascending: false });
@@ -1221,7 +1219,7 @@ export default function PartidosPanel({ onCountChange }: { onCountChange: (n: nu
     }
     const dur = getDuracionSeg();
     setCreando(true);
-    const { error: err } = await insforge.database
+    const { error: err } = await neon
       .from("partidos_olimpiadas")
       .insert([
         {
@@ -1251,7 +1249,7 @@ export default function PartidosPanel({ onCountChange }: { onCountChange: (n: nu
 
   async function handleEliminar(id: string) {
     setDeletingId(id);
-    const { error: err } = await insforge.database
+    const { error: err } = await neon
       .from("partidos_olimpiadas")
       .delete()
       .eq("id", id);
@@ -1273,9 +1271,9 @@ export default function PartidosPanel({ onCountChange }: { onCountChange: (n: nu
     setErrorDesfinalizar("");
     setUnfinalizandoId(partido.id);
     try {
-      const { error: err } = await insforge.database
+      const { error: err } = await neon
         .from("partidos_olimpiadas")
-        .update([createDesfinalizarPatch(partido.historial ?? [])])
+        .update(createDesfinalizarPatch(partido.historial ?? []))
         .eq("id", partido.id);
       if (err) {
         setErrorDesfinalizar("No se pudo desfinalizar el partido. Intenta de nuevo.");

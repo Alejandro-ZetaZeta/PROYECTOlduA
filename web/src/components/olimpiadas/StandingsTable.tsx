@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { insforge } from "@/lib/insforge/browser";
+import { neon } from "@/lib/neon/client";
 import {
   computeStandings,
   groupBlocks,
@@ -35,12 +35,12 @@ export default function StandingsTable({
 
   const cargar = React.useCallback(async () => {
     const [g, p] = await Promise.all([
-      insforge.database
+      neon
         .from("olimpiadas_grupos")
         .select("*")
         .eq("disciplina", disciplina)
         .eq("categoria", categoria),
-      insforge.database
+      neon
         .from("partidos_olimpiadas")
         .select("*")
         .eq("disciplina", disciplina)

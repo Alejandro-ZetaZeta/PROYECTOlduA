@@ -1,8 +1,8 @@
 /// <reference types="astro/client" />
 
 interface ImportMetaEnv {
-  readonly PUBLIC_INSFORGE_URL: string;
-  readonly PUBLIC_INSFORGE_ANON_KEY: string;
+  /** HTTPS Neon URL without credentials, e.g. https://ep-xxx.c-9.aws.neon.tech/neondb */
+  readonly PUBLIC_NEON_DB_URL: string;
 }
 
 interface ImportMeta {

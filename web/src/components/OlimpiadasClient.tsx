@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { insforge } from "@/lib/insforge/browser";
+import { neon } from "@/lib/neon/client";
 import {
   DISCIPLINAS,
   CARRERAS,
@@ -483,7 +483,7 @@ function UpcomingSchedule() {
   const [loaded, setLoaded] = React.useState(false);
 
   const cargar = React.useCallback(async () => {
-    const { data: schRows } = await insforge.database
+    const { data: schRows } = await neon
       .from("olimpiadas_schedule")
       .select("partido_id, posicion")
       .order("posicion", { ascending: true });
@@ -497,7 +497,7 @@ function UpcomingSchedule() {
     const typedRows = schRows as { partido_id: string; posicion: number }[];
     const ids = typedRows.map((r) => r.partido_id);
 
-    const { data: pData } = await insforge.database
+    const { data: pData } = await neon
       .from("partidos_olimpiadas")
       .select("*")
       .in("id", ids);
@@ -907,7 +907,7 @@ export default function OlimpiadasClient() {
             nivel: form.nivel,
           };
 
-    const { error } = await insforge.database.from(cfg.table).insert([payload]);
+    const { error } = await neon.from(cfg.table).insert([payload]);
     if (error) {
       setState("error");
       if (error.code === "23505") {

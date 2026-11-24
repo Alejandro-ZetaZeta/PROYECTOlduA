@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { insforge } from "@/lib/insforge/browser";
+import { neon } from "@/lib/neon/client";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -141,7 +141,7 @@ export default function CronogramaPanel() {
 
   async function loadPartidos() {
     setLoadingPartidos(true);
-    const { data } = await insforge.database
+    const { data } = await neon
       .from("partidos_olimpiadas")
       .select("*")
       .order("created_at", { ascending: false });
@@ -151,7 +151,7 @@ export default function CronogramaPanel() {
 
   async function loadSchedule() {
     setLoadingSchedule(true);
-    const { data: schRows } = await insforge.database
+    const { data: schRows } = await neon
       .from("olimpiadas_schedule")
       .select("partido_id, posicion")
       .order("posicion", { ascending: true });
@@ -164,7 +164,7 @@ export default function CronogramaPanel() {
 
     const typedRows = schRows as { partido_id: string; posicion: number }[];
     const ids = typedRows.map((r) => r.partido_id);
-    const { data: pData } = await insforge.database
+    const { data: pData } = await neon
       .from("partidos_olimpiadas")
       .select("*")
       .in("id", ids);
@@ -288,7 +288,7 @@ export default function CronogramaPanel() {
     setSaveError("");
 
     // Delete all existing schedule rows
-    const { error: delErr } = await insforge.database
+    const { error: delErr } = await neon
       .from("olimpiadas_schedule")
       .delete()
       .neq("id", "00000000-0000-0000-0000-000000000000");
@@ -305,7 +305,7 @@ export default function CronogramaPanel() {
         partido_id: p.id,
         posicion: i + 1,
       }));
-      const { error: insErr } = await insforge.database
+      const { error: insErr } = await neon
         .from("olimpiadas_schedule")
         .insert(rows);
       if (insErr) {
